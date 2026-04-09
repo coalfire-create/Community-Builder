@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/"
+title = "명지대 기계시스템공학과 커뮤니티"
+version = "1.0.0"
+id = "artifacts/community"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 21400
+
+[services.development]
+run = "pnpm --filter @workspace/community run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/community", "run", "build" ]
+publicDir = "artifacts/community/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "21400"
+BASE_PATH = "/"

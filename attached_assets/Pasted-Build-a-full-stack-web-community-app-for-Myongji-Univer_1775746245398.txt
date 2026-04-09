@@ -1,0 +1,119 @@
+Build a full-stack web community app for Myongji University Mechanical Systems Engineering (명지대 기계시스템공학과) students using Node.js + Express backend and a clean HTML/CSS/JS frontend (or React). Use SQLite or a simple JSON-based database for storage.
+
+---
+
+## 🔐 Authentication & Access Control
+
+- Students register with a student ID and password (no email verification needed for prototype)
+- On registration, require:
+  - Student ID (학번)
+  - Password
+  - Name (not shown publicly — for admin use only)
+- Only users with department code "기계시스템공학과" can register and access the site
+- If a non-department user tries to access, show a block page: "이 커뮤니티는 명지대 기계시스템공학과 학생 전용입니다."
+- Session-based login (express-session or JWT)
+- Logout button always visible in header
+
+---
+
+## 👥 User Roles
+
+Three roles:
+1. **일반 학생 (student)** — default role
+2. **학생회 (council)** — assigned manually by admin; gets a blue verified badge (✅ 학생회) next to their display name
+3. **관리자 (admin)** — full access; can change user roles
+
+---
+
+## 📝 Posts (게시판)
+
+- All posts are **anonymous** — display name shown as "익명" for regular posts
+- Exception: council members' posts show "익명 ✅ 학생회" badge
+- Post fields: title, content, created_at, like_count, comment_count
+- Any logged-in student can create a post
+- Posts feed shows: title, anonymous label, time ago, like count, comment count
+- Click post to view full content + comments
+- Post author can delete their own post
+
+---
+
+## 📢 공지사항 (Announcements)
+
+- Separate section/tab called "공지사항"
+- **Only council members and admins** can create announcements
+- Announcements show the council badge: "학생회 ✅"
+- Announcements are pinned at the top of the main feed with a 📢 icon
+- Regular students can view and like/comment on announcements but cannot create them
+- If a regular student clicks "공지 작성", show: "학생회 회원만 공지를 작성할 수 있습니다."
+
+---
+
+## 💬 Comments (댓글)
+
+- Any logged-in user can comment on any post or announcement
+- Comments are also **anonymous** — shown as "익명" or "익명 ✅ 학생회" for council members
+- Comment fields: content, created_at
+- Comments shown below the post in chronological order
+- Comment author can delete their own comment
+
+---
+
+## ❤️ Likes (좋아요)
+
+- Any logged-in user can like/unlike a post or announcement (toggle)
+- Each user can only like once per post
+- Like count shown on post card and post detail page
+- Like button: heart icon ❤️, turns red when liked
+
+---
+
+## 🛠️ Admin Panel (/admin)
+
+- Only accessible by admin role
+- List all users with their role
+- Button to promote a student to "council" or demote back to "student"
+- Cannot delete users (for safety)
+- Simple table UI
+
+---
+
+## 🎨 UI Design
+
+- Clean, modern Korean-style community UI (similar to에브리타임 에브리타임)
+- Color scheme: Myongji University blue (#003DA5) and white
+- Mobile-responsive
+- Navigation tabs: 전체글 | 공지사항 | 글쓰기
+- Header shows: "명지대 기계시스템공학과 커뮤니티" logo + logout button
+- Post cards with subtle shadows, rounded corners
+- Badge "✅ 학생회" in blue pill shape
+
+---
+
+## 📁 File Structure
+
+/project
+  /public
+    index.html
+    style.css
+    app.js
+  /routes
+    auth.js
+    posts.js
+    comments.js
+    admin.js
+  /db
+    database.js (SQLite setup)
+  server.js
+  package.json
+
+---
+
+## 🚀 Setup
+
+- npm packages: express, express-session, bcrypt, better-sqlite3, cors
+- Seed one admin account: ID: admin001, password: admin1234
+- Seed one council account: ID: council001, password: council1234
+- App runs on port 3000
+- README.md with setup instructions in Korean
+
+Start by creating the full working app with all features above.
