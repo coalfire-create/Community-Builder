@@ -1,7 +1,8 @@
-import { createContext, useContext, useEffect, useState, ReactNode } from "react";
-import { useGetMe } from "@workspace/api-client-react";
+import { createContext, useContext, useEffect, ReactNode } from "react";
+import { useGetMe, getGetMeQueryKey, useLogout } from "@workspace/api-client-react";
 import type { User } from "@workspace/api-client-react";
 import { useLocation } from "wouter";
+import { useQueryClient } from "@tanstack/react-query";
 
 type AuthContextType = {
   user: User | null;
@@ -14,37 +15,37 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [location, setLocation] = useLocation();
-  const { data: user, isLoading, isError, error } = useGetMe({
+  const queryClient = useQueryClient();
+  const { data: user, isLoading, isError, isFetching } = useGetMe({
     query: {
       retry: false,
     }
   });
-
-  const [localUser, setLocalUser] = useState<User | null>(null);
+  const { mutate: logoutMutate } = useLogout();
 
   useEffect(() => {
-    if (user) {
-      setLocalUser(user);
-    } else if (isError) {
-      setLocalUser(null);
-      // Redirect to login if not authenticated and not on login/register page
+    if (isError && !isFetching) {
       if (location !== "/" && location !== "/register") {
         setLocation("/");
       }
     }
-  }, [user, isError, location, setLocation]);
+  }, [isError, isFetching, location, setLocation]);
 
   const logout = () => {
-    setLocalUser(null);
-    setLocation("/");
+    logoutMutate(undefined, {
+      onSettled: () => {
+        queryClient.setQueryData(getGetMeQueryKey(), undefined);
+        setLocation("/");
+      },
+    });
   };
 
   return (
     <AuthContext.Provider
       value={{
-        user: localUser,
+        user: user ?? null,
         isLoading,
-        isAuthenticated: !!localUser,
+        isAuthenticated: !!user,
         logout,
       }}
     >

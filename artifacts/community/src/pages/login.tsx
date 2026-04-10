@@ -39,8 +39,8 @@ export function Login() {
     login(
       { data: values },
       {
-        onSuccess: () => {
-          queryClient.invalidateQueries({ queryKey: getGetMeQueryKey() });
+        onSuccess: (data) => {
+          queryClient.setQueryData(getGetMeQueryKey(), data.user);
           setLocation("/feed");
         },
         onError: (error) => {
