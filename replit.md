@@ -55,6 +55,19 @@ Tables:
 - `comments` — content, postId, authorId
 - `likes` — postId, userId (unique constraint)
 - `session` — connect-pg-simple session store
+- `allowed_student_ids` — pre-approved 1st year student IDs (studentId, note)
+
+## Registration Flow
+
+**1학년 (1st year)**: Admin pre-enters student IDs in the allowed list via admin panel. These IDs can register directly without image verification.
+
+**2학년+ (2nd year and above)**: Must upload a screenshot of the MSI portal (msi.mju.ac.kr) showing 기계공학부 in the 학부(과) field + their student ID. The server uses OpenAI GPT-5.2 vision to verify the image matches. Requires `AI_INTEGRATIONS_OPENAI_BASE_URL` and `AI_INTEGRATIONS_OPENAI_API_KEY` env vars (auto-provisioned via Replit AI Integrations).
+
+**API endpoints**:
+- `GET /api/auth/check-student-id?studentId=<id>` — returns `{ allowed: boolean }` (public)
+- `GET /api/admin/allowed-student-ids` — list all pre-approved IDs (admin only)
+- `POST /api/admin/allowed-student-ids` — add IDs: `{ studentIds: string | string[], note?: string }` (admin only)
+- `DELETE /api/admin/allowed-student-ids/:studentId` — remove an ID (admin only)
 
 ## Key Commands
 

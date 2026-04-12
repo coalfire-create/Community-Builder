@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { db, usersTable } from "@workspace/db";
+import { db, usersTable, allowedStudentIdsTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { UpdateUserRoleBody, UpdateUserRoleParams } from "@workspace/api-zod";
 import { requireRole } from "../middlewares/requireAuth";
@@ -51,6 +51,62 @@ router.patch("/admin/users/:userId/role", requireRole(["admin"]), async (req, re
     role: updated.role,
     createdAt: updated.createdAt,
   });
+});
+
+// Allowed student IDs (1학년 pre-approved list)
+router.get("/admin/allowed-student-ids", requireRole(["admin"]), async (req, res): Promise<void> => {
+  const list = await db.select().from(allowedStudentIdsTable).orderBy(allowedStudentIdsTable.createdAt);
+  res.json(list);
+});
+
+router.post("/admin/allowed-student-ids", requireRole(["admin"]), async (req, res): Promise<void> => {
+  const { studentIds, note } = req.body as { studentIds: string | string[]; note?: string };
+
+  if (!studentIds) {
+    res.status(400).json({ error: "Bad Request", message: "학번을 입력해주세요." });
+    return;
+  }
+
+  const ids = (Array.isArray(studentIds) ? studentIds : [studentIds])
+    .map((s: string) => s.trim())
+    .filter(Boolean);
+
+  if (ids.length === 0) {
+    res.status(400).json({ error: "Bad Request", message: "유효한 학번이 없습니다." });
+    return;
+  }
+
+  const inserted = [];
+  const errors = [];
+
+  for (const studentId of ids) {
+    try {
+      const [row] = await db.insert(allowedStudentIdsTable)
+        .values({ studentId, note: note ?? null })
+        .onConflictDoNothing()
+        .returning();
+      if (row) inserted.push(row);
+    } catch {
+      errors.push(studentId);
+    }
+  }
+
+  res.status(201).json({ inserted, errors });
+});
+
+router.delete("/admin/allowed-student-ids/:studentId", requireRole(["admin"]), async (req, res): Promise<void> => {
+  const studentId = Array.isArray(req.params.studentId) ? req.params.studentId[0] : req.params.studentId;
+
+  const deleted = await db.delete(allowedStudentIdsTable)
+    .where(eq(allowedStudentIdsTable.studentId, studentId))
+    .returning();
+
+  if (deleted.length === 0) {
+    res.status(404).json({ error: "Not Found", message: "해당 학번이 목록에 없습니다." });
+    return;
+  }
+
+  res.json({ message: "삭제되었습니다." });
 });
 
 export default router;
