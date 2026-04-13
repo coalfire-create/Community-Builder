@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import bcrypt from "bcryptjs";
-import OpenAI from "openai";
+import { GoogleGenAI } from "@google/genai";
 import { db, usersTable, allowedStudentIdsTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { RegisterBody, LoginBody } from "@workspace/api-zod";
@@ -10,23 +10,27 @@ const router: IRouter = Router();
 
 const REQUIRED_DEPARTMENT = "기계시스템공학과";
 
-const openai = new OpenAI({
-  baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
-  apiKey: process.env.AI_INTEGRATIONS_OPENAI_API_KEY ?? "dummy",
+const ai = new GoogleGenAI({
+  apiKey: process.env.AI_INTEGRATIONS_GEMINI_API_KEY ?? "dummy",
+  httpOptions: {
+    apiVersion: "",
+    baseUrl: process.env.AI_INTEGRATIONS_GEMINI_BASE_URL,
+  },
 });
 
 async function verifyMechanicalEngineeringImage(base64Image: string, studentId: string): Promise<{ verified: boolean; reason: string }> {
   try {
-    const dataUrl = base64Image.startsWith("data:") ? base64Image : `data:image/jpeg;base64,${base64Image}`;
-    const response = await openai.chat.completions.create({
-      model: "gpt-5.2",
-      max_completion_tokens: 512,
-      messages: [
+    // Strip data URL prefix if present
+    const base64Data = base64Image.includes(",") ? base64Image.split(",")[1] : base64Image;
+    const mimeType = base64Image.startsWith("data:image/png") ? "image/png" : "image/jpeg";
+
+    const response = await ai.models.generateContent({
+      model: "gemini-2.5-flash",
+      contents: [
         {
           role: "user",
-          content: [
+          parts: [
             {
-              type: "text",
               text: `이 이미지를 분석해주세요.
 
 확인 사항:
@@ -40,15 +44,18 @@ async function verifyMechanicalEngineeringImage(base64Image: string, studentId: 
 verified는 1, 2, 3번 조건이 모두 충족될 때만 true입니다.`,
             },
             {
-              type: "image_url",
-              image_url: { url: dataUrl },
+              inlineData: {
+                mimeType,
+                data: base64Data,
+              },
             },
           ],
         },
       ],
+      config: { maxOutputTokens: 512 },
     });
 
-    const content = response.choices[0]?.message?.content?.trim() ?? "";
+    const content = response.text?.trim() ?? "";
     const jsonMatch = content.match(/\{[\s\S]*\}/);
     if (jsonMatch) {
       return JSON.parse(jsonMatch[0]);
