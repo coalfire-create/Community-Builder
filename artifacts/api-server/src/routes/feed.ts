@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import { db, postsTable, commentsTable, likesTable, usersTable } from "@workspace/db";
-import { eq, desc, and, count, inArray, or } from "drizzle-orm";
+import { desc, and, count, inArray, eq } from "drizzle-orm";
 import { GetFeedQueryParams } from "@workspace/api-zod";
 import { requireAuth } from "../middlewares/requireAuth";
 
@@ -18,7 +18,7 @@ router.get("/feed", requireAuth, async (req, res): Promise<void> => {
   const rows = await db
     .select()
     .from(postsTable)
-    .orderBy(desc(postsTable.type), desc(postsTable.createdAt))
+    .orderBy(desc(postsTable.createdAt))
     .limit(limit)
     .offset(offset);
 

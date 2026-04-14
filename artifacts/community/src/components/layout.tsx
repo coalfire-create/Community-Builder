@@ -36,14 +36,15 @@ export function Layout({ children }: { children: ReactNode }) {
   }
 
   return (
-    <div className="min-h-screen bg-muted/30">
+    <div className="min-h-screen bg-muted/40">
       <header className="sticky top-0 z-50 w-full bg-primary text-primary-foreground shadow-sm">
-        <div className="container mx-auto max-w-md px-4 h-14 flex items-center justify-between">
-          <Link href="/feed" className="font-bold text-base tracking-tight leading-tight">
-            명지대 기계시스템공학과<br/>
-            <span className="text-xs font-normal opacity-80">커뮤니티</span>
+        <div className="relative max-w-lg mx-auto px-4 h-14 flex items-center justify-center">
+          <Link href="/feed" className="text-center">
+            <div className="font-bold text-sm tracking-tight leading-tight text-center">
+              명지대 기계시스템공학과 커뮤니티
+            </div>
           </Link>
-          <div className="flex items-center gap-1">
+          <div className="absolute right-4 flex items-center gap-1">
             {user?.role === "admin" && (
               <Link href="/admin">
                 <Button
@@ -68,7 +69,7 @@ export function Layout({ children }: { children: ReactNode }) {
           </div>
         </div>
       </header>
-      <main className="container mx-auto max-w-md p-0 bg-background min-h-[calc(100vh-3.5rem)] shadow-sm">
+      <main className="max-w-lg mx-auto p-0 bg-background min-h-[calc(100vh-3.5rem)] shadow-sm">
         {children}
       </main>
     </div>
