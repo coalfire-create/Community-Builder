@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Switch, Route, Router as WouterRouter, Redirect } from "wouter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
@@ -13,6 +14,7 @@ import { Write } from "@/pages/write";
 import { Admin } from "@/pages/admin";
 import { Blocked } from "@/pages/blocked";
 import NotFound from "@/pages/not-found";
+import { SplashScreen } from "@/components/splash-screen";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -80,9 +82,19 @@ function Router() {
 }
 
 function App() {
+  const [splashDone, setSplashDone] = useState(() => {
+    return sessionStorage.getItem("splashShown") === "true";
+  });
+
+  function handleSplashComplete() {
+    sessionStorage.setItem("splashShown", "true");
+    setSplashDone(true);
+  }
+
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
+        {!splashDone && <SplashScreen onComplete={handleSplashComplete} />}
         <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
           <AuthProvider>
             <Router />
