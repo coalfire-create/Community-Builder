@@ -58,8 +58,8 @@ export function Login() {
     <div className="flex min-h-[100dvh] flex-col items-center justify-center bg-background px-4 py-12">
       <div className="w-full max-w-sm space-y-8">
         <div className="text-center space-y-2">
-          <div className="mx-auto bg-primary text-primary-foreground w-16 h-16 rounded-2xl flex items-center justify-center mb-6 shadow-md">
-            <span className="text-2xl font-bold">M</span>
+          <div className="mx-auto w-24 h-24 rounded-2xl overflow-hidden mb-6 shadow-md">
+            <img src="/logo.jpg" alt="기계시스템공학과 로고" className="w-full h-full object-cover" />
           </div>
           <h1 className="text-2xl font-bold tracking-tight text-foreground">
             명지대 기계시스템공학과<br/>커뮤니티
