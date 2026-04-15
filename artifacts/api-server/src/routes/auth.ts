@@ -73,6 +73,7 @@ router.post("/auth/register", async (req, res): Promise<void> => {
   }
 
   const { studentId, password, name, department } = parsed.data;
+  const grade: string | undefined = (req.body as any).grade;
   const verificationImage: string | undefined = (req.body as any).verificationImage;
 
   if (department !== REQUIRED_DEPARTMENT) {
@@ -83,29 +84,37 @@ router.post("/auth/register", async (req, res): Promise<void> => {
     return;
   }
 
+  if (!grade || !["1", "2+"].includes(grade)) {
+    res.status(400).json({ error: "Bad Request", message: "학년을 선택해주세요." });
+    return;
+  }
+
   const existingSnap = await usersCol().where("studentId", "==", studentId).limit(1).get();
   if (!existingSnap.empty) {
     res.status(400).json({ error: "Bad Request", message: "이미 존재하는 학번입니다." });
     return;
   }
 
-  if (!verificationImage) {
-    res.status(403).json({
-      error: "Forbidden",
-      message: "학생정보시스템(msi.mju.ac.kr) 학생카드 화면 사진 인증이 필요합니다.",
-      requiresVerification: true,
-    });
-    return;
-  }
+  // 2학년 이상: 학생카드 이미지 AI 인증 필수
+  if (grade === "2+") {
+    if (!verificationImage) {
+      res.status(403).json({
+        error: "Forbidden",
+        message: "2학년 이상은 학생카드 사진 인증이 필요합니다.",
+        requiresVerification: true,
+      });
+      return;
+    }
 
-  const result = await verifyMechanicalEngineeringImage(verificationImage, studentId);
-  if (!result.verified) {
-    res.status(403).json({
-      error: "Forbidden",
-      message: `사진 인증에 실패했습니다: ${result.reason}`,
-      requiresVerification: true,
-    });
-    return;
+    const result = await verifyMechanicalEngineeringImage(verificationImage, studentId);
+    if (!result.verified) {
+      res.status(403).json({
+        error: "Forbidden",
+        message: `사진 인증에 실패했습니다: ${result.reason}`,
+        requiresVerification: true,
+      });
+      return;
+    }
   }
 
   const passwordHash = await bcrypt.hash(password, 12);
@@ -117,6 +126,7 @@ router.post("/auth/register", async (req, res): Promise<void> => {
     passwordHash,
     name,
     department,
+    grade,
     role: "student",
     createdAt: now,
   });
