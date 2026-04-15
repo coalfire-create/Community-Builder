@@ -39,9 +39,14 @@ export function Layout({ children }: { children: ReactNode }) {
     <div className="min-h-screen bg-muted/40">
       <header className="sticky top-0 z-50 w-full bg-primary text-primary-foreground shadow-sm">
         <div className="relative max-w-lg mx-auto px-4 h-14 flex items-center justify-center">
-          <Link href="/feed" className="text-center">
-            <div className="font-bold text-sm tracking-tight leading-tight text-center">
-              명지대 기계시스템공학과 커뮤니티
+          <Link href="/feed" className="flex flex-col items-center gap-0.5">
+            <img
+              src="/mju-logo.png"
+              alt="명지대학교"
+              className="h-6 object-contain brightness-0 invert"
+            />
+            <div className="font-semibold text-xs tracking-tight text-primary-foreground/90">
+              기계시스템공학과 커뮤니티
             </div>
           </Link>
           <div className="absolute right-4 flex items-center gap-1">
