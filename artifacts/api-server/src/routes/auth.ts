@@ -1,8 +1,7 @@
 import { Router, type IRouter } from "express";
 import bcrypt from "bcryptjs";
 import { GoogleGenAI } from "@google/genai";
-import { db, usersTable } from "@workspace/db";
-import { eq } from "drizzle-orm";
+import { FieldValue, usersCol, toDate, type FSUser } from "../lib/firestore";
 import { RegisterBody, LoginBody } from "@workspace/api-zod";
 import { requireAuth } from "../middlewares/requireAuth";
 
@@ -20,7 +19,6 @@ const ai = new GoogleGenAI({
 
 async function verifyMechanicalEngineeringImage(base64Image: string, studentId: string): Promise<{ verified: boolean; reason: string }> {
   try {
-    // Strip data URL prefix if present
     const base64Data = base64Image.includes(",") ? base64Image.split(",")[1] : base64Image;
     const mimeType = base64Image.startsWith("data:image/png") ? "image/png" : "image/jpeg";
 
@@ -85,13 +83,12 @@ router.post("/auth/register", async (req, res): Promise<void> => {
     return;
   }
 
-  const existing = await db.select().from(usersTable).where(eq(usersTable.studentId, studentId));
-  if (existing.length > 0) {
+  const existingSnap = await usersCol().where("studentId", "==", studentId).limit(1).get();
+  if (!existingSnap.empty) {
     res.status(400).json({ error: "Bad Request", message: "이미 존재하는 학번입니다." });
     return;
   }
 
-  // All students must verify via Gemini AI (MSI portal screenshot)
   if (!verificationImage) {
     res.status(403).json({
       error: "Forbidden",
@@ -113,37 +110,29 @@ router.post("/auth/register", async (req, res): Promise<void> => {
 
   const passwordHash = await bcrypt.hash(password, 12);
 
-  const [user] = await db.insert(usersTable).values({
+  const docRef = usersCol().doc();
+  const now = new Date();
+  await docRef.set({
     studentId,
     passwordHash,
     name,
     department,
     role: "student",
-  }).returning();
+    createdAt: now,
+  });
 
-  req.session.userId = user.id;
-  req.session.role = user.role;
+  req.session.userId = docRef.id;
+  req.session.role = "student";
 
   res.status(201).json({
     user: {
-      id: user.id,
-      studentId: user.studentId,
-      role: user.role,
-      createdAt: user.createdAt,
+      id: docRef.id,
+      studentId,
+      role: "student",
+      createdAt: now.toISOString(),
     },
     message: "회원가입이 완료되었습니다.",
   });
-});
-
-// Check if a student ID is in the pre-approved list (no auth needed)
-router.get("/auth/check-student-id", async (req, res): Promise<void> => {
-  const studentId = req.query.studentId as string;
-  if (!studentId) {
-    res.status(400).json({ error: "Bad Request", message: "학번이 필요합니다." });
-    return;
-  }
-  const [allowed] = await db.select().from(allowedStudentIdsTable).where(eq(allowedStudentIdsTable.studentId, studentId));
-  res.json({ allowed: !!allowed });
 });
 
 router.post("/auth/login", async (req, res): Promise<void> => {
@@ -155,27 +144,29 @@ router.post("/auth/login", async (req, res): Promise<void> => {
 
   const { studentId, password } = parsed.data;
 
-  const [user] = await db.select().from(usersTable).where(eq(usersTable.studentId, studentId));
-  if (!user) {
+  const snap = await usersCol().where("studentId", "==", studentId).limit(1).get();
+  if (snap.empty) {
     res.status(401).json({ error: "Unauthorized", message: "학번 또는 비밀번호가 올바르지 않습니다." });
     return;
   }
 
+  const userDoc = snap.docs[0];
+  const user = userDoc.data() as FSUser;
   const valid = await bcrypt.compare(password, user.passwordHash);
   if (!valid) {
     res.status(401).json({ error: "Unauthorized", message: "학번 또는 비밀번호가 올바르지 않습니다." });
     return;
   }
 
-  req.session.userId = user.id;
+  req.session.userId = userDoc.id;
   req.session.role = user.role;
 
   res.json({
     user: {
-      id: user.id,
+      id: userDoc.id,
       studentId: user.studentId,
       role: user.role,
-      createdAt: user.createdAt,
+      createdAt: toDate(user.createdAt),
     },
     message: "로그인되었습니다.",
   });
@@ -188,17 +179,19 @@ router.post("/auth/logout", async (req, res): Promise<void> => {
 });
 
 router.get("/auth/me", requireAuth, async (req, res): Promise<void> => {
-  const [user] = await db.select().from(usersTable).where(eq(usersTable.id, req.session.userId!));
-  if (!user) {
+  const userId = req.session.userId!;
+  const doc = await usersCol().doc(userId).get();
+  if (!doc.exists) {
     res.status(401).json({ error: "Unauthorized", message: "인증이 필요합니다." });
     return;
   }
 
+  const user = doc.data() as FSUser;
   res.json({
-    id: user.id,
+    id: doc.id,
     studentId: user.studentId,
     role: user.role,
-    createdAt: user.createdAt,
+    createdAt: toDate(user.createdAt),
   });
 });
 

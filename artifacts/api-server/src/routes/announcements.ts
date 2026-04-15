@@ -1,69 +1,67 @@
 import { Router, type IRouter } from "express";
-import { db, postsTable, commentsTable, likesTable, usersTable } from "@workspace/db";
-import { eq, desc, and, count, inArray } from "drizzle-orm";
-import { CreateAnnouncementBody, ListAnnouncementsQueryParams } from "@workspace/api-zod";
+import { postsCol, commentsCol, likesCol, usersCol, toDate, type FSPost, type FSUser, type FSComment } from "../lib/firestore";
+import { CreateAnnouncementBody } from "@workspace/api-zod";
 import { requireAuth, requireRole } from "../middlewares/requireAuth";
 
 const router: IRouter = Router();
 
-function formatPost(post: typeof postsTable.$inferSelect, author: typeof usersTable.$inferSelect, likeCnt: number, commentCnt: number, isLiked: boolean, isOwnPost: boolean) {
+function formatPost(id: string, post: FSPost, authorRole: string, likeCnt: number, commentCnt: number, isLiked: boolean, isOwnPost: boolean) {
   return {
-    id: post.id,
+    id,
     title: post.title,
     content: post.content,
-    authorRole: author.role,
+    authorRole,
     likeCount: likeCnt,
     commentCount: commentCnt,
     isLiked,
     isOwnPost,
     type: post.type,
-    createdAt: post.createdAt,
+    createdAt: toDate(post.createdAt),
   };
 }
 
 router.get("/announcements", requireAuth, async (req, res): Promise<void> => {
-  const parsed = ListAnnouncementsQueryParams.safeParse(req.query);
-  const page = parsed.success ? (parsed.data.page ?? 1) : 1;
-  const limit = parsed.success ? (parsed.data.limit ?? 20) : 20;
-  const offset = (page - 1) * limit;
+  const page = parseInt((req.query.page as string) ?? "1", 10) || 1;
+  const limit = parseInt((req.query.limit as string) ?? "20", 10) || 20;
   const userId = req.session.userId!;
 
-  const [{ total }] = await db.select({ total: count() }).from(postsTable).where(eq(postsTable.type, "announcement"));
+  const snap = await postsCol()
+    .where("type", "==", "announcement")
+    .orderBy("createdAt", "desc")
+    .get();
 
-  const rows = await db
-    .select()
-    .from(postsTable)
-    .where(eq(postsTable.type, "announcement"))
-    .orderBy(desc(postsTable.createdAt))
-    .limit(limit)
-    .offset(offset);
+  const total = snap.size;
+  const rows = snap.docs.slice((page - 1) * limit, (page - 1) * limit + limit);
 
   if (rows.length === 0) {
-    res.json({ posts: [], total: Number(total), page, limit });
+    res.json({ posts: [], total, page, limit });
     return;
   }
 
-  const postIds = rows.map((p) => p.id);
-  const authorIds = [...new Set(rows.map((p) => p.authorId))];
+  const authorIds = [...new Set(rows.map((d) => (d.data() as FSPost).authorId))];
+  const authorMap = new Map<string, string>();
+  await Promise.all(authorIds.map(async (aid) => {
+    const doc = await usersCol().doc(aid).get();
+    if (doc.exists) authorMap.set(aid, (doc.data() as FSUser).role);
+  }));
 
-  const authors = await db.select().from(usersTable).where(inArray(usersTable.id, authorIds));
-  const authorMap = new Map(authors.map((a) => [a.id, a]));
+  const postIds = rows.map((d) => d.id);
+  const likedSet = new Set<string>();
+  for (let i = 0; i < postIds.length; i += 10) {
+    const chunk = postIds.slice(i, i + 10);
+    const likedSnap = await likesCol()
+      .where("userId", "==", userId)
+      .where("postId", "in", chunk)
+      .get();
+    likedSnap.docs.forEach((d) => likedSet.add(d.data().postId));
+  }
 
-  const likeCounts = await db.select({ postId: likesTable.postId, cnt: count() }).from(likesTable).where(inArray(likesTable.postId, postIds)).groupBy(likesTable.postId);
-  const likeCountMap = new Map(likeCounts.map((l) => [l.postId, Number(l.cnt)]));
-
-  const userLikes = await db.select({ postId: likesTable.postId }).from(likesTable).where(and(inArray(likesTable.postId, postIds), eq(likesTable.userId, userId)));
-  const likedSet = new Set(userLikes.map((l) => l.postId));
-
-  const commentCounts = await db.select({ postId: commentsTable.postId, cnt: count() }).from(commentsTable).where(inArray(commentsTable.postId, postIds)).groupBy(commentsTable.postId);
-  const commentCountMap = new Map(commentCounts.map((c) => [c.postId, Number(c.cnt)]));
-
-  const posts = rows.map((p) => {
-    const author = authorMap.get(p.authorId)!;
-    return formatPost(p, author, likeCountMap.get(p.id) ?? 0, commentCountMap.get(p.id) ?? 0, likedSet.has(p.id), p.authorId === userId);
+  const posts = rows.map((d) => {
+    const p = d.data() as FSPost;
+    return formatPost(d.id, p, authorMap.get(p.authorId) ?? "student", p.likeCount ?? 0, p.commentCount ?? 0, likedSet.has(d.id), p.authorId === userId);
   });
 
-  res.json({ posts, total: Number(total), page, limit });
+  res.json({ posts, total, page, limit });
 });
 
 router.post("/announcements", requireRole(["council", "admin"]), async (req, res): Promise<void> => {
@@ -74,71 +72,90 @@ router.post("/announcements", requireRole(["council", "admin"]), async (req, res
   }
 
   const userId = req.session.userId!;
-  const [author] = await db.select().from(usersTable).where(eq(usersTable.id, userId));
+  const role = req.session.role!;
 
-  const [post] = await db.insert(postsTable).values({
+  const docRef = postsCol().doc();
+  const now = new Date();
+  const postData = {
     title: parsed.data.title,
     content: parsed.data.content,
     authorId: userId,
-    type: "announcement",
-  }).returning();
+    type: "announcement" as const,
+    likeCount: 0,
+    commentCount: 0,
+    createdAt: now,
+  };
+  await docRef.set(postData);
 
-  res.status(201).json(formatPost(post, author, 0, 0, false, true));
+  res.status(201).json(formatPost(docRef.id, { ...postData, createdAt: undefined as any, id: docRef.id }, role, 0, 0, false, true));
 });
 
 router.get("/announcements/:postId", requireAuth, async (req, res): Promise<void> => {
-  const rawId = Array.isArray(req.params.postId) ? req.params.postId[0] : req.params.postId;
-  const postId = parseInt(rawId, 10);
+  const postId = req.params.postId;
   const userId = req.session.userId!;
 
-  const [post] = await db.select().from(postsTable).where(and(eq(postsTable.id, postId), eq(postsTable.type, "announcement")));
-  if (!post) {
+  const doc = await postsCol().doc(postId).get();
+  if (!doc.exists) {
     res.status(404).json({ error: "Not Found", message: "공지사항을 찾을 수 없습니다." });
     return;
   }
 
-  const [author] = await db.select().from(usersTable).where(eq(usersTable.id, post.authorId));
-  const [{ cnt: likeCnt }] = await db.select({ cnt: count() }).from(likesTable).where(eq(likesTable.postId, postId));
-  const [{ cnt: commentCnt }] = await db.select({ cnt: count() }).from(commentsTable).where(eq(commentsTable.postId, postId));
-  const userLike = await db.select().from(likesTable).where(and(eq(likesTable.postId, postId), eq(likesTable.userId, userId)));
+  const post = doc.data() as FSPost;
+  if (post.type !== "announcement") {
+    res.status(404).json({ error: "Not Found", message: "공지사항을 찾을 수 없습니다." });
+    return;
+  }
 
-  const comments = await db.select().from(commentsTable).where(eq(commentsTable.postId, postId)).orderBy(commentsTable.createdAt);
-  const authorIds = [...new Set(comments.map((c) => c.authorId))];
-  const commentAuthors = authorIds.length > 0
-    ? await db.select().from(usersTable).where(inArray(usersTable.id, authorIds))
-    : [];
-  const commentAuthorMap = new Map(commentAuthors.map((a) => [a.id, a]));
+  const authorDoc = await usersCol().doc(post.authorId).get();
+  const authorRole = authorDoc.exists ? (authorDoc.data() as FSUser).role : "student";
 
-  const formattedComments = comments.map((c) => ({
-    id: c.id,
-    content: c.content,
-    authorRole: commentAuthorMap.get(c.authorId)?.role ?? "student",
-    isOwnComment: c.authorId === userId,
-    createdAt: c.createdAt,
+  const likeSnap = await likesCol().where("postId", "==", postId).where("userId", "==", userId).limit(1).get();
+
+  const commentsSnap = await commentsCol()
+    .where("postId", "==", postId)
+    .orderBy("createdAt", "asc")
+    .get();
+
+  const commentAuthorIds = [...new Set(commentsSnap.docs.map((d) => (d.data() as FSComment).authorId))];
+  const commentAuthorMap = new Map<string, string>();
+  await Promise.all(commentAuthorIds.map(async (aid) => {
+    const d = await usersCol().doc(aid).get();
+    if (d.exists) commentAuthorMap.set(aid, (d.data() as FSUser).role);
   }));
 
-  const base = formatPost(post, author, Number(likeCnt), Number(commentCnt), userLike.length > 0, post.authorId === userId);
-  res.json({ ...base, comments: formattedComments });
+  const comments = commentsSnap.docs.map((d) => {
+    const c = d.data() as FSComment;
+    return {
+      id: d.id,
+      content: c.content,
+      authorRole: commentAuthorMap.get(c.authorId) ?? "student",
+      isOwnComment: c.authorId === userId,
+      createdAt: toDate(c.createdAt),
+    };
+  });
+
+  const base = formatPost(doc.id, post, authorRole, post.likeCount ?? 0, post.commentCount ?? 0, !likeSnap.empty, post.authorId === userId);
+  res.json({ ...base, comments });
 });
 
 router.delete("/announcements/:postId", requireRole(["council", "admin"]), async (req, res): Promise<void> => {
-  const rawId = Array.isArray(req.params.postId) ? req.params.postId[0] : req.params.postId;
-  const postId = parseInt(rawId, 10);
+  const postId = req.params.postId;
   const userId = req.session.userId!;
   const role = req.session.role!;
 
-  const [post] = await db.select().from(postsTable).where(eq(postsTable.id, postId));
-  if (!post) {
+  const doc = await postsCol().doc(postId).get();
+  if (!doc.exists) {
     res.status(404).json({ error: "Not Found", message: "공지사항을 찾을 수 없습니다." });
     return;
   }
 
+  const post = doc.data() as FSPost;
   if (post.authorId !== userId && role !== "admin") {
     res.status(403).json({ error: "Forbidden", message: "삭제 권한이 없습니다." });
     return;
   }
 
-  await db.delete(postsTable).where(eq(postsTable.id, postId));
+  await postsCol().doc(postId).delete();
   res.json({ message: "공지사항이 삭제되었습니다." });
 });
 

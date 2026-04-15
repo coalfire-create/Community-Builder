@@ -1,31 +1,38 @@
 import { Router, type IRouter } from "express";
-import { db, likesTable, postsTable } from "@workspace/db";
-import { eq, and, count } from "drizzle-orm";
+import { likesCol, postsCol, toDate, type FSPost } from "../lib/firestore";
+import { FieldValue } from "firebase-admin/firestore";
 import { requireAuth } from "../middlewares/requireAuth";
 
 const router: IRouter = Router();
 
-async function toggleLike(postId: number, userId: number) {
-  const existing = await db.select().from(likesTable).where(
-    and(eq(likesTable.postId, postId), eq(likesTable.userId, userId))
-  );
+async function toggleLike(postId: string, userId: string) {
+  const existingSnap = await likesCol()
+    .where("postId", "==", postId)
+    .where("userId", "==", userId)
+    .limit(1)
+    .get();
 
-  if (existing.length > 0) {
-    await db.delete(likesTable).where(and(eq(likesTable.postId, postId), eq(likesTable.userId, userId)));
+  const postRef = postsCol().doc(postId);
+
+  if (!existingSnap.empty) {
+    await existingSnap.docs[0].ref.delete();
+    await postRef.update({ likeCount: FieldValue.increment(-1) });
+    const updated = await postRef.get();
+    return { liked: false, likeCount: (updated.data() as FSPost)?.likeCount ?? 0 };
   } else {
-    await db.insert(likesTable).values({ postId, userId });
+    await likesCol().doc().set({ postId, userId, createdAt: new Date() });
+    await postRef.update({ likeCount: FieldValue.increment(1) });
+    const updated = await postRef.get();
+    return { liked: true, likeCount: (updated.data() as FSPost)?.likeCount ?? 0 };
   }
-
-  const [{ cnt }] = await db.select({ cnt: count() }).from(likesTable).where(eq(likesTable.postId, postId));
-  return { liked: existing.length === 0, likeCount: Number(cnt) };
 }
 
 router.post("/posts/:postId/like", requireAuth, async (req, res): Promise<void> => {
-  const postId = parseInt(req.params.postId, 10);
+  const postId = req.params.postId;
   const userId = req.session.userId!;
 
-  const [post] = await db.select().from(postsTable).where(eq(postsTable.id, postId));
-  if (!post) {
+  const doc = await postsCol().doc(postId).get();
+  if (!doc.exists) {
     res.status(404).json({ error: "Not Found", message: "게시글을 찾을 수 없습니다." });
     return;
   }
@@ -35,11 +42,11 @@ router.post("/posts/:postId/like", requireAuth, async (req, res): Promise<void> 
 });
 
 router.post("/announcements/:postId/like", requireAuth, async (req, res): Promise<void> => {
-  const postId = parseInt(req.params.postId, 10);
+  const postId = req.params.postId;
   const userId = req.session.userId!;
 
-  const [post] = await db.select().from(postsTable).where(eq(postsTable.id, postId));
-  if (!post) {
+  const doc = await postsCol().doc(postId).get();
+  if (!doc.exists) {
     res.status(404).json({ error: "Not Found", message: "공지사항을 찾을 수 없습니다." });
     return;
   }

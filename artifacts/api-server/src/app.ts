@@ -3,7 +3,8 @@ import cors from "cors";
 import pinoHttp from "pino-http";
 import session from "express-session";
 import connectPg from "connect-pg-simple";
-import { pool } from "@workspace/db";
+import pg from "pg";
+import "./lib/firestore"; // initialize Firebase Admin
 import router from "./routes";
 import { logger } from "./lib/logger";
 
@@ -36,19 +37,25 @@ app.use(cors({
   credentials: true,
 }));
 
-app.use(express.json());
+app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true }));
-
-const PgSession = connectPg(session);
 
 if (!process.env.SESSION_SECRET) {
   throw new Error("SESSION_SECRET must be set");
 }
 
+if (!process.env.DATABASE_URL) {
+  throw new Error("DATABASE_URL must be set for session store");
+}
+
+const { Pool } = pg;
+const sessionPool = new Pool({ connectionString: process.env.DATABASE_URL });
+const PgSession = connectPg(session);
+
 app.use(
   session({
     store: new PgSession({
-      pool,
+      pool: sessionPool,
       tableName: "session",
       createTableIfMissing: false,
     }),
@@ -58,7 +65,7 @@ app.use(
     cookie: {
       secure: process.env.NODE_ENV === "production",
       httpOnly: true,
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      maxAge: 7 * 24 * 60 * 60 * 1000,
     },
   }),
 );
