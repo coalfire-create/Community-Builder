@@ -1,7 +1,7 @@
 import { Router, type IRouter } from "express";
 import bcrypt from "bcryptjs";
 import { GoogleGenAI } from "@google/genai";
-import { db, usersTable, allowedStudentIdsTable } from "@workspace/db";
+import { db, usersTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { RegisterBody, LoginBody } from "@workspace/api-zod";
 import { requireAuth } from "../middlewares/requireAuth";
@@ -91,29 +91,24 @@ router.post("/auth/register", async (req, res): Promise<void> => {
     return;
   }
 
-  // Check if student ID is in the allowed list (1학년 pre-approved list)
-  const [allowed] = await db.select().from(allowedStudentIdsTable).where(eq(allowedStudentIdsTable.studentId, studentId));
+  // All students must verify via Gemini AI (MSI portal screenshot)
+  if (!verificationImage) {
+    res.status(403).json({
+      error: "Forbidden",
+      message: "학생정보시스템(msi.mju.ac.kr) 학생카드 화면 사진 인증이 필요합니다.",
+      requiresVerification: true,
+    });
+    return;
+  }
 
-  if (!allowed) {
-    // Not in allowed list: must verify via MSI screenshot (2학년+)
-    if (!verificationImage) {
-      res.status(403).json({
-        error: "Forbidden",
-        message: "2학년 이상 학생은 학생정보시스템(msi.mju.ac.kr) 화면 사진 인증이 필요합니다.",
-        requiresVerification: true,
-      });
-      return;
-    }
-
-    const result = await verifyMechanicalEngineeringImage(verificationImage, studentId);
-    if (!result.verified) {
-      res.status(403).json({
-        error: "Forbidden",
-        message: `사진 인증에 실패했습니다: ${result.reason}`,
-        requiresVerification: true,
-      });
-      return;
-    }
+  const result = await verifyMechanicalEngineeringImage(verificationImage, studentId);
+  if (!result.verified) {
+    res.status(403).json({
+      error: "Forbidden",
+      message: `사진 인증에 실패했습니다: ${result.reason}`,
+      requiresVerification: true,
+    });
+    return;
   }
 
   const passwordHash = await bcrypt.hash(password, 12);
