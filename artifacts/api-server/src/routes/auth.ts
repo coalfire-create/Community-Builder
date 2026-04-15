@@ -32,14 +32,12 @@ async function verifyMechanicalEngineeringImage(base64Image: string, studentId: 
               text: `이 이미지를 분석해주세요.
 
 확인 사항:
-1. 명지대학교 학생정보시스템(MSI, msi.mju.ac.kr)의 학생카드 화면인가요?
-2. 학부(과) 항목에 "기계공학부" 또는 "기계시스템" 관련 내용이 표시되어 있나요?
-3. 학번 항목에 "${studentId}"가 표시되어 있나요?
+1. 이미지 어딘가에 "기계시스템공학부" 라는 텍스트가 있나요?
 
 반드시 JSON 형식으로만 답변하세요 (다른 텍스트 없이):
 {"verified": true/false, "reason": "한국어로 간단한 이유"}
 
-verified는 1, 2, 3번 조건이 모두 충족될 때만 true입니다.`,
+verified는 이미지에 "기계시스템공학부" 텍스트가 존재할 때만 true입니다.`,
             },
             {
               inlineData: {
