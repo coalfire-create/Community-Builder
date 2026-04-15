@@ -72,7 +72,7 @@ export function Write() {
   };
 
   return (
-    <div className="min-h-[calc(100vh-3.5rem)] flex flex-col">
+    <div className="min-h-[calc(100vh-4rem)] flex flex-col">
       <div className="flex items-center justify-between px-4 py-3 border-b border-border">
         <div className="flex items-center gap-2">
           <button onClick={() => setLocation("/feed")} className="p-1 hover:bg-muted rounded-md transition-colors">

@@ -62,7 +62,7 @@ export function Login() {
           <img
             src="/mju-logo.png"
             alt="명지대학교"
-            className="h-10 object-contain"
+            className="h-16 object-contain"
           />
         </div>
 

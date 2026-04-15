@@ -189,7 +189,7 @@ export function Admin() {
   }
 
   return (
-    <div className="min-h-[calc(100vh-3.5rem)]">
+    <div className="min-h-[calc(100vh-4rem)]">
       <div className="flex items-center gap-2 px-4 py-3 border-b border-border">
         <button onClick={() => setLocation("/feed")} className="p-1 hover:bg-muted rounded-md transition-colors">
           <ArrowLeft className="h-5 w-5" />

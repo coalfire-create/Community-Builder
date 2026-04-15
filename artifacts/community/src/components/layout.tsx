@@ -38,12 +38,12 @@ export function Layout({ children }: { children: ReactNode }) {
   return (
     <div className="min-h-screen bg-muted/40">
       <header className="sticky top-0 z-50 w-full bg-primary text-primary-foreground shadow-sm">
-        <div className="relative max-w-lg mx-auto px-4 h-14 flex items-center justify-center">
-          <Link href="/feed" className="flex flex-col items-center gap-0.5">
+        <div className="relative max-w-lg mx-auto px-4 h-16 flex items-center justify-center">
+          <Link href="/feed" className="flex flex-col items-center gap-1">
             <img
               src="/mju-logo.png"
               alt="명지대학교"
-              className="h-6 object-contain brightness-0 invert"
+              className="h-8 object-contain brightness-0 invert"
             />
             <div className="font-semibold text-xs tracking-tight text-primary-foreground/90">
               기계시스템공학과 커뮤니티
@@ -74,7 +74,7 @@ export function Layout({ children }: { children: ReactNode }) {
           </div>
         </div>
       </header>
-      <main className="max-w-lg mx-auto p-0 bg-background min-h-[calc(100vh-3.5rem)] shadow-sm">
+      <main className="max-w-lg mx-auto p-0 bg-background min-h-[calc(100vh-4rem)] shadow-sm">
         {children}
       </main>
     </div>

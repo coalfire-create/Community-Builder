@@ -232,7 +232,7 @@ export function Feed() {
   const items = feedData?.items ?? [];
 
   return (
-    <div className="min-h-[calc(100vh-3.5rem)]">
+    <div className="min-h-[calc(100vh-4rem)]">
       <ComposeBox />
 
       <div>
