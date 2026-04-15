@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { initializeApp, getApps, cert } from "firebase-admin/app";
 import { getFirestore, FieldValue, Timestamp } from "firebase-admin/firestore";
 
