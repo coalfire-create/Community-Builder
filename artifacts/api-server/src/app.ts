@@ -66,6 +66,8 @@ app.use(
       secure: process.env.NODE_ENV === "production",
       httpOnly: true,
       maxAge: 7 * 24 * 60 * 60 * 1000,
+      // 크로스-도메인(Vercel 프론트 → Replit API) 쿠키 전송을 위해 production에서 SameSite=None 사용
+      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
     },
   }),
 );
