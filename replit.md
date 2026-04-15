@@ -2,7 +2,7 @@
 
 ## Overview
 
-pnpm workspace monorepo using TypeScript. Contains a full-stack Korean university community app for Myongji University's Mechanical Systems Engineering department (명지대 기계시스템공학과).
+pnpm workspace monorepo using TypeScript. Full-stack Korean university community app for Myongji University's Mechanical Systems Engineering department (명지대 기계시스템공학과).
 
 ## Stack
 
@@ -11,76 +11,81 @@ pnpm workspace monorepo using TypeScript. Contains a full-stack Korean universit
 - **Package manager**: pnpm
 - **TypeScript version**: 5.9
 - **API framework**: Express 5 with express-session + bcryptjs
-- **Session store**: connect-pg-simple (PostgreSQL-backed sessions)
-- **Database**: PostgreSQL + Drizzle ORM
-- **Validation**: Zod (`zod/v4`), `drizzle-zod`
-- **API codegen**: Orval (from OpenAPI spec)
-- **Build**: esbuild (CJS bundle)
+- **Session store**: connect-pg-simple (PostgreSQL-backed sessions only)
+- **Primary database**: Firebase Firestore (users, posts, comments, likes)
+- **AI verification**: Google Gemini 2.5 Flash (MSI portal screenshot verification)
+- **Validation**: Zod (`zod/v4`)
 - **Frontend**: React + Vite + Tailwind CSS + shadcn/ui
 
 ## Artifacts
 
 ### API Server (`artifacts/api-server`)
-Express 5 backend at `/api` path. Handles:
-- Auth: register, login, logout, /me (session-based)
-- Posts: CRUD with anonymous display
-- Announcements: Council/admin only creation
-- Comments: On posts and announcements
-- Likes: Toggle per user per post
-- Feed: Combined feed with announcements pinned first
-- Admin: User role management
+Express 5 backend at `/api` path. All data (except sessions) stored in Firestore.
+
+- Auth: register (Gemini AI image verification), login, logout, /me
+- Posts: CRUD for regular posts
+- Announcements: Council/admin-only creation
+- Comments: On posts and announcements (sorted in-memory, no composite index needed)
+- Likes: Toggle per user per post (denormalized count on post doc)
+- Feed: Combined posts + announcements sorted by createdAt desc
+- Admin: User role management (GET/PATCH users)
+
+**Firestore Collections:**
+- `users` — studentId, passwordHash, name, department, role, createdAt
+- `posts` — title, content, authorId, type (post|announcement), likeCount, commentCount, createdAt
+- `comments` — postId, authorId, content, createdAt
+- `likes` — postId, userId, createdAt
+
+**PostgreSQL** (only used for):
+- `session` — express-session store via connect-pg-simple
 
 ### Community Frontend (`artifacts/community`)
-React + Vite app at `/` path. Pages:
+React + Vite app at `/` path.
+
+Pages:
 - `/` — Login
-- `/register` — Registration (department-gated)
-- `/feed` — Main feed with tabs
+- `/register` — Registration with Gemini AI MSI screenshot verification
+- `/feed` — Main feed (inline ComposeBox, posts + announcements)
 - `/post/:id` — Post detail with comments
 - `/announcement/:id` — Announcement detail with comments
-- `/write` — Create post/announcement
 - `/admin` — Admin panel (admin role only)
-- `/blocked` — Department access block page
 
-## User Roles & Seed Accounts
+**Splash screen**: Blue bg (#003DA5), "내가 누구야" → "내가 기계다" slide animation, shows once per session.
 
-- **admin001 / admin1234** — Admin role
-- **council001 / council1234** — Council role (학생회)
-- Regular students can register with `department: 기계시스템공학과`
+## User Roles & Accounts
 
-## Database Schema
-
-Tables:
-- `users` — studentId, passwordHash, name, department, role (student|council|admin)
-- `posts` — title, content, authorId, type (post|announcement)
-- `comments` — content, postId, authorId
-- `likes` — postId, userId (unique constraint)
-- `session` — connect-pg-simple session store
-- `allowed_student_ids` — pre-approved 1st year student IDs (studentId, note)
+- **admin001 / admin1234** — Admin (in Firestore, doc id: `70SbRDjlJdhBihrTxK0f`)
+- **council001 / council1234** — Council/학생회 (doc id: `pFNOPbRHOOFZhLiiF3m2`)
+- Students must register with Gemini AI image verification (MSI portal screenshot)
 
 ## Registration Flow
 
-**1학년 (1st year)**: Admin pre-enters student IDs in the allowed list via admin panel. These IDs can register directly without image verification.
+**All students** must upload a screenshot of the MSI portal (msi.mju.ac.kr) showing:
+1. 명지대학교 학생정보시스템 화면
+2. 학부(과) = 기계공학부 또는 기계시스템 관련
+3. 학번이 입력한 값과 일치
 
-**2학년+ (2nd year and above)**: Must upload a screenshot of the MSI portal (msi.mju.ac.kr) showing 기계공학부 in the 학부(과) field + their student ID. The server uses OpenAI GPT-5.2 vision to verify the image matches. Requires `AI_INTEGRATIONS_OPENAI_BASE_URL` and `AI_INTEGRATIONS_OPENAI_API_KEY` env vars (auto-provisioned via Replit AI Integrations).
+Verified by Gemini 2.5 Flash vision AI. Requires `AI_INTEGRATIONS_GEMINI_API_KEY` and `AI_INTEGRATIONS_GEMINI_BASE_URL`.
 
-**API endpoints**:
-- `GET /api/auth/check-student-id?studentId=<id>` — returns `{ allowed: boolean }` (public)
-- `GET /api/admin/allowed-student-ids` — list all pre-approved IDs (admin only)
-- `POST /api/admin/allowed-student-ids` — add IDs: `{ studentIds: string | string[], note?: string }` (admin only)
-- `DELETE /api/admin/allowed-student-ids/:studentId` — remove an ID (admin only)
+## Firebase Config
+
+Project ID: `mechanic-myongi`
+Service account stored in secrets: `FIREBASE_PROJECT_ID`, `FIREBASE_CLIENT_EMAIL`, `FIREBASE_PRIVATE_KEY`
+Initialized in: `artifacts/api-server/src/lib/firestore.ts`
 
 ## Key Commands
 
 - `pnpm run typecheck` — full typecheck across all packages
-- `pnpm run build` — typecheck + build all packages
-- `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from OpenAPI spec
-- `pnpm --filter @workspace/db run push` — push DB schema changes (dev only)
 - `pnpm --filter @workspace/api-server run dev` — run API server locally
-- `pnpm --filter @workspace/scripts run seed` — seed admin/council accounts
 
 ## Anonymous Display Rules
 
 - Regular post/comment: shows "익명"
 - Council/admin post/comment: shows "익명 ✅ 학생회"
+
+## Brand
+
+- Color: `#003DA5` (Myongji blue) — set as `--primary` in `index.css`
+- Logo: `artifacts/community/public/logo.jpg` (48대 機本 image)
 
 See the `pnpm-workspace` skill for workspace structure, TypeScript setup, and package details.

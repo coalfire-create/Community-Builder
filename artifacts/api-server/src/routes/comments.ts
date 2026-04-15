@@ -7,9 +7,9 @@ import { requireAuth } from "../middlewares/requireAuth";
 const router: IRouter = Router();
 
 async function getComments(postId: string, userId: string) {
+  // orderBy + where requires a composite index; sort in-memory instead
   const snap = await commentsCol()
     .where("postId", "==", postId)
-    .orderBy("createdAt", "asc")
     .get();
 
   const authorIds = [...new Set(snap.docs.map((d) => (d.data() as FSComment).authorId))];
@@ -19,7 +19,13 @@ async function getComments(postId: string, userId: string) {
     if (d.exists) authorMap.set(aid, (d.data() as FSUser).role);
   }));
 
-  return snap.docs.map((d) => {
+  const sorted = snap.docs.sort((a, b) => {
+    const aT = (a.data() as FSComment).createdAt?.toMillis?.() ?? 0;
+    const bT = (b.data() as FSComment).createdAt?.toMillis?.() ?? 0;
+    return aT - bT;
+  });
+
+  return sorted.map((d) => {
     const c = d.data() as FSComment;
     return {
       id: d.id,

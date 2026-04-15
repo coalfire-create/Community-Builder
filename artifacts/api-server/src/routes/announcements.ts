@@ -113,17 +113,22 @@ router.get("/announcements/:postId", requireAuth, async (req, res): Promise<void
 
   const commentsSnap = await commentsCol()
     .where("postId", "==", postId)
-    .orderBy("createdAt", "asc")
     .get();
 
-  const commentAuthorIds = [...new Set(commentsSnap.docs.map((d) => (d.data() as FSComment).authorId))];
+  const sortedCommentDocs = commentsSnap.docs.sort((a, b) => {
+    const aT = (a.data() as FSComment).createdAt?.toMillis?.() ?? 0;
+    const bT = (b.data() as FSComment).createdAt?.toMillis?.() ?? 0;
+    return aT - bT;
+  });
+
+  const commentAuthorIds = [...new Set(sortedCommentDocs.map((d) => (d.data() as FSComment).authorId))];
   const commentAuthorMap = new Map<string, string>();
   await Promise.all(commentAuthorIds.map(async (aid) => {
     const d = await usersCol().doc(aid).get();
     if (d.exists) commentAuthorMap.set(aid, (d.data() as FSUser).role);
   }));
 
-  const comments = commentsSnap.docs.map((d) => {
+  const comments = sortedCommentDocs.map((d) => {
     const c = d.data() as FSComment;
     return {
       id: d.id,
