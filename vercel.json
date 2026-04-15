@@ -1,0 +1,10 @@
+{
+  "buildCommand": "pnpm --filter @workspace/community run build",
+  "outputDirectory": "artifacts/community/dist/public",
+  "installCommand": "pnpm install",
+  "framework": null,
+  "env": {
+    "BASE_PATH": "/",
+    "NODE_ENV": "production"
+  }
+}
