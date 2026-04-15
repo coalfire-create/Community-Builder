@@ -109,3 +109,5 @@ Initialized in: `artifacts/api-server/src/lib/firestore.ts`
 - Logo: `artifacts/community/public/logo.jpg` (48대 機本 image)
 
 See the `pnpm-workspace` skill for workspace structure, TypeScript setup, and package details.
+테스트용
+
