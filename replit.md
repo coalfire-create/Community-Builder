@@ -65,7 +65,27 @@ Pages:
 2. 학부(과) = 기계공학부 또는 기계시스템 관련
 3. 학번이 입력한 값과 일치
 
-Verified by Gemini 2.5 Flash vision AI. Requires `AI_INTEGRATIONS_GEMINI_API_KEY` and `AI_INTEGRATIONS_GEMINI_BASE_URL`.
+Verified by Gemini 2.5 Flash vision AI. `GEMINI_API_KEY` (standard Google API key) takes priority; falls back to Replit proxy `AI_INTEGRATIONS_GEMINI_API_KEY` for local dev.
+
+## Deployment (Vercel)
+
+Both frontend and API server run on Vercel:
+- **Frontend**: static build from `artifacts/community/dist/public` (outputDirectory)
+- **API**: `api/index.ts` at project root → Vercel Serverless Function (maxDuration: 30s)
+- **Routing** in `vercel.json`: `/api/*` → serverless, filesystem → static, fallback → `index.html`
+
+**Required Vercel Environment Variables:**
+| Variable | Description |
+|---|---|
+| `GEMINI_API_KEY` | Google AI Studio API key |
+| `DATABASE_URL` | Neon (or other) PostgreSQL connection string for sessions |
+| `SESSION_SECRET` | Random secret for express-session |
+| `FIREBASE_PROJECT_ID` | Firebase project id (`mechanic-myongi`) |
+| `FIREBASE_CLIENT_EMAIL` | Firebase service account email |
+| `FIREBASE_PRIVATE_KEY` | Firebase service account private key (with `\n` newlines) |
+| `NODE_ENV` | `production` |
+
+Session table is auto-created (`createTableIfMissing: true`) — no manual SQL needed.
 
 ## Firebase Config
 

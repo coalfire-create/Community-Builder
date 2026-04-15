@@ -9,13 +9,25 @@ const router: IRouter = Router();
 
 const REQUIRED_DEPARTMENT = "기계시스템공학과";
 
-const ai = new GoogleGenAI({
-  apiKey: process.env.AI_INTEGRATIONS_GEMINI_API_KEY ?? "dummy",
-  httpOptions: {
+// 표준 Google AI Studio 키(GEMINI_API_KEY) 우선, Replit 프록시(AI_INTEGRATIONS_GEMINI_API_KEY) 폴백
+const geminiApiKey =
+  process.env.GEMINI_API_KEY ??
+  process.env.AI_INTEGRATIONS_GEMINI_API_KEY ??
+  "dummy";
+
+const aiOptions: ConstructorParameters<typeof GoogleGenAI>[0] = {
+  apiKey: geminiApiKey,
+};
+
+// Replit 프록시 환경에서만 커스텀 baseUrl 적용
+if (process.env.AI_INTEGRATIONS_GEMINI_BASE_URL && !process.env.GEMINI_API_KEY) {
+  aiOptions.httpOptions = {
     apiVersion: "",
     baseUrl: process.env.AI_INTEGRATIONS_GEMINI_BASE_URL,
-  },
-});
+  };
+}
+
+const ai = new GoogleGenAI(aiOptions);
 
 async function verifyMechanicalEngineeringImage(base64Image: string, studentId: string): Promise<{ verified: boolean; reason: string }> {
   try {
