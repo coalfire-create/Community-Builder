@@ -10,10 +10,17 @@
   },
   "private": true,
   "pnpm": {
-    "onlyBuiltDependencies": ["@firebase/util", "protobufjs"]
+    "onlyBuiltDependencies": [
+      "@firebase/util",
+      "protobufjs"
+    ]
   },
   "devDependencies": {
-    "typescript": "~5.9.2",
-    "prettier": "^3.8.1"
+    "prettier": "^3.8.1",
+    "typescript": "~5.9.2"
+  },
+  "dependencies": {
+    "@radix-ui/react-label": "^2.1.8",
+    "@radix-ui/react-tooltip": "^1.2.8"
   }
 }
