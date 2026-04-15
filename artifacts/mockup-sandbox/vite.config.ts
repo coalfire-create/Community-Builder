@@ -28,6 +28,7 @@ if (!basePath) {
 }
 
 export default defineConfig({
+  build: { sourcemap: false },
   base: basePath,
   plugins: [
     mockupPreviewPlugin(),

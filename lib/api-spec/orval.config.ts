@@ -14,6 +14,7 @@ const titleTransformer: InputTransformerFn = (config) => {
 };
 
 export default defineConfig({
+  build: { sourcemap: false },
   "api-client-react": {
     input: {
       target: "./openapi.yaml",
