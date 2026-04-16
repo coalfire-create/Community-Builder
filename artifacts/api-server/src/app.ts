@@ -36,8 +36,22 @@ if (!process.env.VERCEL) {
   );
 }
 
+const allowedOrigins = process.env.ALLOWED_ORIGINS
+  ? process.env.ALLOWED_ORIGINS.split(",").map((o) => o.trim())
+  : [];
+
 app.use(cors({
-  origin: true,
+  origin: (origin, callback) => {
+    // 개발 환경이거나 동일 출처 요청(origin 없음)은 허용
+    if (!origin || process.env.NODE_ENV !== "production") {
+      return callback(null, true);
+    }
+    // ALLOWED_ORIGINS 환경변수에 등록된 도메인만 허용
+    if (allowedOrigins.length === 0 || allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+    return callback(new Error("CORS: 허용되지 않은 출처입니다."));
+  },
   credentials: true,
 }));
 

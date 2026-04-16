@@ -74,13 +74,13 @@ onlyBuiltDependencies:
   - unrs-resolver
 
 overrides:
-  # replit uses linux-x64 only, we can exclude all other platforms
+  # Exclude platforms not needed for Replit (linux-x64) or Vercel (linux-x64, linux-arm64) builds
+  # Keep: linux-x64-gnu, linux-x64-musl, linux-arm64-gnu, linux-arm64-musl
   "esbuild>@esbuild/darwin-arm64": "-"
   "esbuild>@esbuild/darwin-x64": "-"
   "esbuild>@esbuild/freebsd-arm64": "-"
   "esbuild>@esbuild/freebsd-x64": "-"
   "esbuild>@esbuild/linux-arm": "-"
-  "esbuild>@esbuild/linux-arm64": "-"
   "esbuild>@esbuild/linux-ia32": "-"
   "esbuild>@esbuild/linux-loong64": "-"
   "esbuild>@esbuild/linux-mips64el": "-"
