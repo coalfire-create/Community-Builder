@@ -1,5 +1,5 @@
 {
-  "buildCommand": "pnpm --filter @workspace/community run build:vercel",
+  "buildCommand": "node build-vercel.mjs",
   "outputDirectory": "dist_web",
   "installCommand": "pnpm install",
   "framework": null,
