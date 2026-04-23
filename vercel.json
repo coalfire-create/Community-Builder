@@ -1,6 +1,6 @@
 {
-  "buildCommand": "pnpm --filter @workspace/community run build",
-  "outputDirectory": "artifacts/community/dist/public",
+  "buildCommand": "pnpm --filter @workspace/community run build && cp -r artifacts/community/dist/public ./dist_web",
+  "outputDirectory": "dist_web",
   "installCommand": "pnpm install",
   "framework": null,
   "functions": {
