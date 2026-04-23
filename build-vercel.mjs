@@ -10,6 +10,11 @@ execSync('pnpm --filter @workspace/community run build', {
   cwd: ROOT,
 });
 
+execSync('pnpm --filter @workspace/api-server run build:app', {
+  stdio: 'inherit',
+  cwd: ROOT,
+});
+
 const src = resolve(ROOT, 'artifacts/community/dist/public');
 const dest = resolve(ROOT, 'dist_web');
 

@@ -1,7 +1,2 @@
-import type { IncomingMessage, ServerResponse } from "node:http";
-import app from "../artifacts/api-server/src/app";
-
-export default function handler(req: IncomingMessage, res: ServerResponse) {
-  // TypeScript가 에러를 뱉지 않도록 as any로 강제 처리합니다.
-  return (app as any)(req, res);
-}
+// Superseded by api/index.mjs — Vercel serverless entry is now api/index.mjs
+// (pre-built with esbuild to avoid TypeScript compilation errors in Vercel's pipeline)
