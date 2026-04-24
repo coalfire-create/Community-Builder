@@ -1,5 +1,5 @@
 {
-  "buildCommand": "node build-vercel.mjs",
+  "buildCommand": "pnpm -w run build:vercel",
   "outputDirectory": "dist_web",
   "installCommand": "pnpm install",
   "framework": null,
