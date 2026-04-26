@@ -16,7 +16,7 @@ execSync('pnpm --filter @workspace/api-server run build:app', {
 });
 
 const src = resolve(ROOT, 'artifacts/community/dist/public');
-const dest = resolve(ROOT, 'dist_web');
+const dest = resolve(ROOT, 'artifacts/api-server', 'dist_web');
 
 if (existsSync(dest)) rmSync(dest, { recursive: true });
 cpSync(src, dest, { recursive: true });
