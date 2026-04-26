@@ -18,7 +18,7 @@ const aiOptions: ConstructorParameters<typeof GoogleGenAI>[0] = {
   apiKey: geminiApiKey,
 };
 
-if (process.env.AI_INTEGRATIONS_GEMINI_BASE_URL && !process.env.GEMINI_API_KEY) {
+if (process.env.AI_INTEGRATIONS_GEMINI_BASE_URL) {
   aiOptions.httpOptions = {
     apiVersion: "",
     baseUrl: process.env.AI_INTEGRATIONS_GEMINI_BASE_URL,
@@ -42,12 +42,13 @@ async function verifyMechanicalEngineeringImage(base64Image: string, _studentId:
               text: `이 이미지를 분석해주세요.
 
 확인 사항:
-1. 이미지 어딘가에 "기계시스템공학부" 라는 텍스트가 있나요?
+1. 이미지에 학생증/학생카드처럼 보이는 내용이 있나요?
+2. 이미지 어딘가에 "기계시스템공학과" 또는 "기계시스템공학부" 라는 텍스트가 있나요?
 
 반드시 JSON 형식으로만 답변하세요 (다른 텍스트 없이):
 {"verified": true/false, "reason": "한국어로 간단한 이유"}
 
-verified는 이미지에 "기계시스템공학부" 텍스트가 존재할 때만 true입니다.`,
+verified는 이미지에 "기계시스템공학과" 또는 "기계시스템공학부" 텍스트가 존재할 때만 true입니다.`,
             },
             {
               inlineData: {
