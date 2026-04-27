@@ -95,119 +95,129 @@ verified는 이미지에 "기계시스템공학과" 또는 "기계시스템공�
 }
 
 router.post("/auth/register", async (req, res): Promise<void> => {
-  const parsed = RegisterBody.safeParse(req.body);
-  if (!parsed.success) {
-    res.status(400).json({ error: "Bad Request", message: parsed.error.message });
-    return;
-  }
+  try {
+    const parsed = RegisterBody.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ error: "Bad Request", message: parsed.error.message });
+      return;
+    }
 
-  const { studentId, password, name, department } = parsed.data;
-  const grade: string | undefined = (req.body as any).grade;
-  const verificationImage: string | undefined = (req.body as any).verificationImage;
+    const { studentId, password, name, department } = parsed.data;
+    const grade: string | undefined = (req.body as any).grade;
+    const verificationImage: string | undefined = (req.body as any).verificationImage;
 
-  if (department !== REQUIRED_DEPARTMENT) {
-    res.status(403).json({
-      error: "Forbidden",
-      message: "이 커뮤니티는 명지대 기계시스템공학과 학생 전용입니다.",
-    });
-    return;
-  }
-
-  if (!grade || !["1", "2+"].includes(grade)) {
-    res.status(400).json({ error: "Bad Request", message: "학년을 선택해주세요." });
-    return;
-  }
-
-  const existingSnap = await usersCol().where("studentId", "==", studentId).limit(1).get();
-  if (!existingSnap.empty) {
-    res.status(400).json({ error: "Bad Request", message: "이미 존재하는 학번입니다." });
-    return;
-  }
-
-  if (grade === "2+") {
-    if (!verificationImage) {
+    if (department !== REQUIRED_DEPARTMENT) {
       res.status(403).json({
         error: "Forbidden",
-        message: "2학년 이상은 학생카드 사진 인증이 필요합니다.",
-        requiresVerification: true,
+        message: "이 커뮤니티는 명지대 기계시스템공학과 학생 전용입니다.",
       });
       return;
     }
 
-    const result = await verifyMechanicalEngineeringImage(verificationImage, studentId);
-    if (!result.verified) {
-      res.status(403).json({
-        error: "Forbidden",
-        message: `사진 인증에 실패했습니다: ${result.reason}`,
-        requiresVerification: true,
-      });
+    if (!grade || !["1", "2+"].includes(grade)) {
+      res.status(400).json({ error: "Bad Request", message: "학년을 선택해주세요." });
       return;
     }
-  }
 
-  const passwordHash = await bcrypt.hash(password, 12);
+    const existingSnap = await usersCol().where("studentId", "==", studentId).limit(1).get();
+    if (!existingSnap.empty) {
+      res.status(400).json({ error: "Bad Request", message: "이미 존재하는 학번입니다." });
+      return;
+    }
 
-  const docRef = usersCol().doc();
-  const now = new Date();
-  await docRef.set({
-    studentId,
-    passwordHash,
-    name,
-    department,
-    role: "student" as const,
-    grade,
-    createdAt: now,
-  });
+    if (grade === "2+") {
+      if (!verificationImage) {
+        res.status(403).json({
+          error: "Forbidden",
+          message: "2학년 이상은 학생카드 사진 인증이 필요합니다.",
+          requiresVerification: true,
+        });
+        return;
+      }
 
-  req.session.userId = docRef.id;
-  req.session.role = "student";
+      const result = await verifyMechanicalEngineeringImage(verificationImage, studentId);
+      if (!result.verified) {
+        res.status(403).json({
+          error: "Forbidden",
+          message: `사진 인증에 실패했습니다: ${result.reason}`,
+          requiresVerification: true,
+        });
+        return;
+      }
+    }
 
-  res.status(201).json({
-    user: {
-      id: docRef.id,
+    const passwordHash = await bcrypt.hash(password, 12);
+
+    const docRef = usersCol().doc();
+    const now = new Date();
+    await docRef.set({
       studentId,
-      role: "student",
-      createdAt: now.toISOString(),
-    },
-    message: "회원가입이 완료되었습니다.",
-  });
+      passwordHash,
+      name,
+      department,
+      role: "student" as const,
+      grade,
+      createdAt: now,
+    });
+
+    req.session.userId = docRef.id;
+    req.session.role = "student";
+
+    res.status(201).json({
+      user: {
+        id: docRef.id,
+        studentId,
+        role: "student",
+        createdAt: now.toISOString(),
+      },
+      message: "회원가입이 완료되었습니다.",
+    });
+  } catch (err: any) {
+    console.error("Register error:", err);
+    res.status(500).json({ error: "Internal Server Error", message: "서버 내부 오류가 발생했습니다.", detail: err?.message });
+  }
 });
 
 router.post("/auth/login", async (req, res): Promise<void> => {
-  const parsed = LoginBody.safeParse(req.body);
-  if (!parsed.success) {
-    res.status(400).json({ error: "Bad Request", message: parsed.error.message });
-    return;
+  try {
+    const parsed = LoginBody.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ error: "Bad Request", message: parsed.error.message });
+      return;
+    }
+
+    const { studentId, password } = parsed.data;
+
+    const snap = await usersCol().where("studentId", "==", studentId).limit(1).get();
+    if (snap.empty) {
+      res.status(401).json({ error: "Unauthorized", message: "학번 또는 비밀번호가 올바르지 않습니다." });
+      return;
+    }
+
+    const userDoc = snap.docs[0];
+    const user = userDoc.data() as FSUser;
+    const valid = await bcrypt.compare(password, user.passwordHash);
+    if (!valid) {
+      res.status(401).json({ error: "Unauthorized", message: "학번 또는 비밀번호가 올바르지 않습니다." });
+      return;
+    }
+
+    req.session.userId = userDoc.id;
+    req.session.role = user.role;
+
+    res.json({
+      user: {
+        id: userDoc.id,
+        studentId: user.studentId,
+        role: user.role,
+        createdAt: toDate(user.createdAt),
+      },
+      message: "로그인되었습니다.",
+    });
+  } catch (err: any) {
+    console.error("Login error:", err);
+    res.status(500).json({ error: "Internal Server Error", message: "서버 내부 오류가 발생했습니다.", detail: err?.message });
   }
-
-  const { studentId, password } = parsed.data;
-
-  const snap = await usersCol().where("studentId", "==", studentId).limit(1).get();
-  if (snap.empty) {
-    res.status(401).json({ error: "Unauthorized", message: "학번 또는 비밀번호가 올바르지 않습니다." });
-    return;
-  }
-
-  const userDoc = snap.docs[0];
-  const user = userDoc.data() as FSUser;
-  const valid = await bcrypt.compare(password, user.passwordHash);
-  if (!valid) {
-    res.status(401).json({ error: "Unauthorized", message: "학번 또는 비밀번호가 올바르지 않습니다." });
-    return;
-  }
-
-  req.session.userId = userDoc.id;
-  req.session.role = user.role;
-
-  res.json({
-    user: {
-      id: userDoc.id,
-      studentId: user.studentId,
-      role: user.role,
-      createdAt: toDate(user.createdAt),
-    },
-    message: "로그인되었습니다.",
-  });
 });
 
 router.post("/auth/logout", async (req, res): Promise<void> => {
@@ -217,20 +227,25 @@ router.post("/auth/logout", async (req, res): Promise<void> => {
 });
 
 router.get("/auth/me", requireAuth, async (req, res): Promise<void> => {
-  const userId = req.session.userId!;
-  const doc = await usersCol().doc(userId).get();
-  if (!doc.exists) {
-    res.status(401).json({ error: "Unauthorized", message: "인증이 필요합니다." });
-    return;
-  }
+  try {
+    const userId = req.session.userId!;
+    const doc = await usersCol().doc(userId).get();
+    if (!doc.exists) {
+      res.status(401).json({ error: "Unauthorized", message: "인증이 필요합니다." });
+      return;
+    }
 
-  const user = doc.data() as FSUser;
-  res.json({
-    id: doc.id,
-    studentId: user.studentId,
-    role: user.role,
-    createdAt: toDate(user.createdAt),
-  });
+    const user = doc.data() as FSUser;
+    res.json({
+      id: doc.id,
+      studentId: user.studentId,
+      role: user.role,
+      createdAt: toDate(user.createdAt),
+    });
+  } catch (err: any) {
+    console.error("Auth me error:", err);
+    res.status(500).json({ error: "Internal Server Error", message: "서버 내부 오류가 발생했습니다.", detail: err?.message });
+  }
 });
 
 export default router;

@@ -1,4 +1,4 @@
-import express, { type Express } from "express";
+import express, { type Express, type Request, type Response, type NextFunction } from "express";
 import cors from "cors";
 import pinoHttp from "pino-http";
 import session from "express-session";
@@ -75,5 +75,16 @@ app.use(
 );
 
 app.use("/api", router);
+
+// Global error handler — must be AFTER all routes
+app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
+  console.error("Unhandled error:", err?.message, err?.stack);
+  if (!res.headersSent) {
+    res.status(500).json({
+      error: "Internal Server Error",
+      message: err?.message ?? "알 수 없는 오류가 발생했습니다.",
+    });
+  }
+});
 
 export default app;
