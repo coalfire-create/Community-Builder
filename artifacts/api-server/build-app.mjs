@@ -6,11 +6,11 @@ const artifactDir = path.dirname(fileURLToPath(import.meta.url));
 
 async function buildApp() {
   await esbuild({
-    entryPoints: [path.resolve(artifactDir, "src/app.ts")],
+    entryPoints: [path.resolve(artifactDir, "src/vercel-handler.ts")],
     platform: "node",
     bundle: true,
     format: "esm",
-    outfile: path.resolve(artifactDir, "dist/app.mjs"),
+    outfile: path.resolve(artifactDir, "api/index.mjs"),
     logLevel: "info",
     define: {
       "process.env.VERCEL": '"1"',
