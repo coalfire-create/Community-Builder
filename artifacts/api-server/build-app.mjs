@@ -1,6 +1,9 @@
+import { createRequire } from "node:module";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { build as esbuild } from "esbuild";
+
+globalThis.require = createRequire(import.meta.url);
 
 const artifactDir = path.dirname(fileURLToPath(import.meta.url));
 
@@ -17,9 +20,6 @@ async function buildApp() {
     },
     external: [
       "*.node",
-      "pino",
-      "pino-http",
-      "pino-pretty",
       "sharp",
       "better-sqlite3",
       "sqlite3",
@@ -28,9 +28,6 @@ async function buildApp() {
       "argon2",
       "fsevents",
       "pg-native",
-      "firebase-admin",
-      "@google-cloud/*",
-      "googleapis",
       "re2",
       "farmhash",
       "bufferutil",
@@ -40,7 +37,6 @@ async function buildApp() {
       "typeorm",
       "@prisma/client",
       "@mikro-orm/*",
-      "@grpc/*",
       "@opentelemetry/*",
       "@aws-sdk/*",
       "@azure/*",
