@@ -35,10 +35,17 @@ const ai = new GoogleGenAI(aiOptions);
 
 const GEMINI_TIMEOUT_MS = 20000;
 
+// 모듈 로드 시점에 API 키 상태 출력
+console.log("[auth] GEMINI_API_KEY set at init:", !!process.env.GEMINI_API_KEY);
+console.log("[auth] AI_INTEGRATIONS_GEMINI_API_KEY set at init:", !!process.env.AI_INTEGRATIONS_GEMINI_API_KEY);
+console.log("[auth] effective gemini key source:", process.env.GEMINI_API_KEY ? "GEMINI_API_KEY" : process.env.AI_INTEGRATIONS_GEMINI_API_KEY ? "AI_INTEGRATIONS" : "DUMMY");
+
 async function verifyMechanicalEngineeringImage(base64Image: string, _studentId: string): Promise<{ verified: boolean; reason: string }> {
+  console.log("[verify] starting AI verification, key source:", process.env.GEMINI_API_KEY ? "GEMINI_API_KEY" : process.env.AI_INTEGRATIONS_GEMINI_API_KEY ? "AI_INTEGRATIONS" : "DUMMY");
   try {
     const base64Data = base64Image.includes(",") ? base64Image.split(",")[1] : base64Image;
     const mimeType = base64Image.startsWith("data:image/png") ? "image/png" : "image/jpeg";
+    console.log("[verify] calling Gemini API, mime:", mimeType, "data length:", base64Data.length);
 
     const geminiCall = ai.models.generateContent({
       model: GEMINI_MODEL,
@@ -83,23 +90,33 @@ verified는 위 텍스트 중 하나라도 이미지에 존재할 때 true입니
     );
 
     const response = await Promise.race([geminiCall, timeout]);
+    console.log("[verify] Gemini API responded successfully");
     const content = response.text?.trim() ?? "";
+    console.log("[verify] raw response:", content.slice(0, 200));
     const jsonMatch = content.match(/\{[\s\S]*\}/);
     if (jsonMatch) {
-      return JSON.parse(jsonMatch[0]);
+      const parsed = JSON.parse(jsonMatch[0]);
+      console.log("[verify] parsed result:", parsed);
+      return parsed;
     }
+    console.warn("[verify] no JSON found in response");
     return { verified: false, reason: "응답 형식 오류" };
   } catch (err: any) {
     if (err?.message === "GEMINI_TIMEOUT") {
-      console.error("AI verification timeout after", GEMINI_TIMEOUT_MS, "ms");
+      console.error("[verify] timeout after", GEMINI_TIMEOUT_MS, "ms");
       return { verified: false, reason: "인증 서비스 응답 시간 초과. 잠시 후 다시 시도해주세요." };
     }
-    console.error("AI verification error:", err);
+    console.error("[verify] error name:", err?.name);
+    console.error("[verify] error message:", err?.message);
+    console.error("[verify] error status:", err?.status ?? err?.statusCode ?? "N/A");
+    console.error("[verify] full error:", JSON.stringify(err, Object.getOwnPropertyNames(err)));
     return { verified: false, reason: "인증 서비스 오류. 잠시 후 다시 시도해주세요." };
   }
 }
 
 router.post("/auth/register", async (req, res): Promise<void> => {
+  console.log("GEMINI_API_KEY set:", !!process.env.GEMINI_API_KEY);
+  console.log("AI_INTEGRATIONS_GEMINI_API_KEY set:", !!process.env.AI_INTEGRATIONS_GEMINI_API_KEY);
   try {
     const parsed = RegisterBody.safeParse(req.body);
     if (!parsed.success) {
