@@ -65,7 +65,10 @@ verified는 이미지에 "기계시스템공학과" 또는 "기계시스템공�
           ],
         },
       ],
-      config: { maxOutputTokens: 512 },
+      config: {
+        maxOutputTokens: 512,
+        thinkingConfig: { thinkingBudget: 0 },
+      },
     });
 
     const content = response.text?.trim() ?? "";
