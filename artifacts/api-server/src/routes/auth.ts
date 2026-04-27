@@ -29,7 +29,7 @@ if (useReplitProxy) {
   };
 }
 
-const GEMINI_MODEL = useReplitProxy ? "gemini-2.5-flash" : "gemini-1.5-flash";
+const GEMINI_MODEL = "gemini-2.5-flash";
 
 const ai = new GoogleGenAI(aiOptions);
 
