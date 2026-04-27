@@ -9,6 +9,10 @@ const router: IRouter = Router();
 
 const REQUIRED_DEPARTMENT = "기계시스템공학과";
 
+const useReplitProxy = !!(
+  process.env.AI_INTEGRATIONS_GEMINI_BASE_URL && !process.env.GEMINI_API_KEY
+);
+
 const geminiApiKey =
   process.env.GEMINI_API_KEY ??
   process.env.AI_INTEGRATIONS_GEMINI_API_KEY ??
@@ -18,12 +22,14 @@ const aiOptions: ConstructorParameters<typeof GoogleGenAI>[0] = {
   apiKey: geminiApiKey,
 };
 
-if (process.env.AI_INTEGRATIONS_GEMINI_BASE_URL) {
+if (useReplitProxy) {
   aiOptions.httpOptions = {
     apiVersion: "",
-    baseUrl: process.env.AI_INTEGRATIONS_GEMINI_BASE_URL,
+    baseUrl: process.env.AI_INTEGRATIONS_GEMINI_BASE_URL!,
   };
 }
+
+const GEMINI_MODEL = useReplitProxy ? "gemini-2.5-flash" : "gemini-1.5-flash";
 
 const ai = new GoogleGenAI(aiOptions);
 
@@ -33,7 +39,7 @@ async function verifyMechanicalEngineeringImage(base64Image: string, _studentId:
     const mimeType = base64Image.startsWith("data:image/png") ? "image/png" : "image/jpeg";
 
     const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
+      model: GEMINI_MODEL,
       contents: [
         {
           role: "user",

@@ -46,9 +46,25 @@ export function Register() {
     if (!file) return;
     const reader = new FileReader();
     reader.onload = (ev) => {
-      const result = ev.target?.result as string;
-      setImagePreview(result);
-      setImageBase64(result);
+      const dataUrl = ev.target?.result as string;
+      const img = new Image();
+      img.onload = () => {
+        const MAX_SIDE = 1280;
+        let { width, height } = img;
+        if (width > MAX_SIDE || height > MAX_SIDE) {
+          if (width > height) { height = Math.round(height * MAX_SIDE / width); width = MAX_SIDE; }
+          else { width = Math.round(width * MAX_SIDE / height); height = MAX_SIDE; }
+        }
+        const canvas = document.createElement("canvas");
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d")!;
+        ctx.drawImage(img, 0, 0, width, height);
+        const compressed = canvas.toDataURL("image/jpeg", 0.85);
+        setImagePreview(compressed);
+        setImageBase64(compressed);
+      };
+      img.src = dataUrl;
     };
     reader.readAsDataURL(file);
   }
