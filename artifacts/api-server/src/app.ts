@@ -51,8 +51,19 @@ if (!process.env.DATABASE_URL) {
   throw new Error("DATABASE_URL must be set for session store");
 }
 
+// Remove channel_binding=require — not supported reliably in all hosting environments
+const dbUrl = process.env.DATABASE_URL
+  .replace(/[&?]channel_binding=require/g, "")
+  .replace(/\?&/, "?");
+
 const { Pool } = pg;
-const sessionPool = new Pool({ connectionString: process.env.DATABASE_URL });
+const sessionPool = new Pool({ connectionString: dbUrl });
+
+// Prevent unhandled pool errors from crashing the process
+sessionPool.on("error", (err) => {
+  console.error("PostgreSQL pool error:", err.message);
+});
+
 const PgSession = connectPg(session);
 
 app.use(
