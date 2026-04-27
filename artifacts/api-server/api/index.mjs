@@ -170949,15 +170949,17 @@ verified\uB294 \uC704 \uD14D\uC2A4\uD2B8 \uC911 \uD558\uB098\uB77C\uB3C4 \uC774\
       console.error("[verify] timeout after", GEMINI_TIMEOUT_MS, "ms");
       return { verified: false, reason: "\uC778\uC99D \uC11C\uBE44\uC2A4 \uC751\uB2F5 \uC2DC\uAC04 \uCD08\uACFC. \uC7A0\uC2DC \uD6C4 \uB2E4\uC2DC \uC2DC\uB3C4\uD574\uC8FC\uC138\uC694." };
     }
-    console.error("[verify] error name:", err?.name);
-    console.error("[verify] error message:", err?.message);
-    console.error("[verify] error status:", err?.status ?? err?.statusCode ?? "N/A");
-    console.error("[verify] full error:", JSON.stringify(err, Object.getOwnPropertyNames(err)));
+    console.error("AI verification error type:", err?.constructor?.name);
+    console.error("AI verification error message:", err?.message);
+    console.error("AI verification error status:", err?.status ?? err?.statusCode);
+    console.error("AI verification full error:", JSON.stringify(err, null, 2));
+    console.error("[verify] error own-props:", JSON.stringify(err, Object.getOwnPropertyNames(err)));
     return { verified: false, reason: "\uC778\uC99D \uC11C\uBE44\uC2A4 \uC624\uB958. \uC7A0\uC2DC \uD6C4 \uB2E4\uC2DC \uC2DC\uB3C4\uD574\uC8FC\uC138\uC694." };
   }
 }
 router2.post("/auth/register", async (req, res) => {
   console.log("GEMINI_API_KEY set:", !!process.env.GEMINI_API_KEY);
+  console.log("GEMINI_API_KEY length:", process.env.GEMINI_API_KEY?.length);
   console.log("AI_INTEGRATIONS_GEMINI_API_KEY set:", !!process.env.AI_INTEGRATIONS_GEMINI_API_KEY);
   try {
     const parsed = RegisterBody.safeParse(req.body);

@@ -106,16 +106,18 @@ verified는 위 텍스트 중 하나라도 이미지에 존재할 때 true입니
       console.error("[verify] timeout after", GEMINI_TIMEOUT_MS, "ms");
       return { verified: false, reason: "인증 서비스 응답 시간 초과. 잠시 후 다시 시도해주세요." };
     }
-    console.error("[verify] error name:", err?.name);
-    console.error("[verify] error message:", err?.message);
-    console.error("[verify] error status:", err?.status ?? err?.statusCode ?? "N/A");
-    console.error("[verify] full error:", JSON.stringify(err, Object.getOwnPropertyNames(err)));
+    console.error("AI verification error type:", err?.constructor?.name);
+    console.error("AI verification error message:", err?.message);
+    console.error("AI verification error status:", err?.status ?? err?.statusCode);
+    console.error("AI verification full error:", JSON.stringify(err, null, 2));
+    console.error("[verify] error own-props:", JSON.stringify(err, Object.getOwnPropertyNames(err)));
     return { verified: false, reason: "인증 서비스 오류. 잠시 후 다시 시도해주세요." };
   }
 }
 
 router.post("/auth/register", async (req, res): Promise<void> => {
   console.log("GEMINI_API_KEY set:", !!process.env.GEMINI_API_KEY);
+  console.log("GEMINI_API_KEY length:", process.env.GEMINI_API_KEY?.length);
   console.log("AI_INTEGRATIONS_GEMINI_API_KEY set:", !!process.env.AI_INTEGRATIONS_GEMINI_API_KEY);
   try {
     const parsed = RegisterBody.safeParse(req.body);
