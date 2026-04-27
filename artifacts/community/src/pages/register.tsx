@@ -95,7 +95,7 @@ export function Register() {
 
     setIsPending(true);
     const controller = new AbortController();
-    const abortTimer = setTimeout(() => controller.abort(), 25000);
+    const abortTimer = setTimeout(() => controller.abort(), 35000);
     try {
       const body: Record<string, unknown> = {
         ...values,
@@ -281,7 +281,7 @@ export function Register() {
                       명지대학교 학생정보시스템(msi.mju.ac.kr) →{" "}
                       학적/장학 → 학생카드 화면에서{" "}
                       <span className="font-medium text-foreground">
-                        학번과 학부(기계공학부)가 모두 보이는 스크린샷
+                        학번과 학부(기계시스템공학과 / 기계공학부)가 모두 보이는 스크린샷
                       </span>
                       을 업로드하세요.
                     </div>
