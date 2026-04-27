@@ -30,7 +30,6 @@ async function buildApp() {
       "pg-native",
       "firebase-admin",
       "@google-cloud/*",
-      "@google/*",
       "googleapis",
       "re2",
       "farmhash",
