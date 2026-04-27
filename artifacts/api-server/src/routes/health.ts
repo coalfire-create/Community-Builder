@@ -20,6 +20,15 @@ router.get("/health", async (_req, res) => {
     isVercel: !!process.env.VERCEL,
   };
 
+  // Only required secrets determine health — exclude informational flags
+  const requiredEnvOk =
+    env.hasFirebaseProjectId &&
+    env.hasFirebaseClientEmail &&
+    env.hasFirebasePrivateKey &&
+    env.hasSessionSecret &&
+    env.hasDatabaseUrl &&
+    env.hasGeminiApiKey;
+
   const services: Record<string, string> = {};
 
   // Probe Firestore
@@ -31,21 +40,22 @@ router.get("/health", async (_req, res) => {
   }
 
   // Probe PostgreSQL with a simple SELECT 1
+  const dbUrl = (process.env.DATABASE_URL ?? "")
+    .replace(/[&?]channel_binding=require/g, "")
+    .replace(/\?&/, "?");
+  const client = new pg.Client({ connectionString: dbUrl });
   try {
-    const dbUrl = (process.env.DATABASE_URL ?? "")
-      .replace(/[&?]channel_binding=require/g, "")
-      .replace(/\?&/, "?");
-    const client = new pg.Client({ connectionString: dbUrl });
     await client.connect();
     await client.query("SELECT 1");
-    await client.end();
     services.postgresql = "ok";
   } catch (e: any) {
     services.postgresql = `error: ${e?.message ?? String(e)}`;
+  } finally {
+    await client.end().catch(() => {});
   }
 
   const allOk =
-    Object.values(env).every(Boolean) &&
+    requiredEnvOk &&
     services.firestore === "ok" &&
     services.postgresql === "ok";
 
