@@ -10,8 +10,8 @@ pnpm workspace monorepo using TypeScript. Full-stack Korean university community
 - **Node.js version**: 24
 - **Package manager**: pnpm
 - **TypeScript version**: 5.9
-- **API framework**: Express 5 with express-session + bcryptjs
-- **Session store**: connect-pg-simple (PostgreSQL-backed sessions only)
+- **API framework**: Express 5 with cookie-session + bcryptjs
+- **Session store**: cookie-session (signed cookies — no DB required)
 - **Primary database**: Firebase Firestore (users, posts, comments, likes)
 - **AI verification**: Google Gemini 2.5 Flash (MSI portal screenshot verification)
 - **Validation**: Zod (`zod/v4`)

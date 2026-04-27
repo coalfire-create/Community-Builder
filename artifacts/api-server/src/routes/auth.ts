@@ -242,10 +242,10 @@ router.post("/auth/login", async (req, res): Promise<void> => {
   }
 });
 
-router.post("/auth/logout", async (req, res): Promise<void> => {
-  req.session.destroy(() => {
-    res.json({ message: "로그아웃되었습니다." });
-  });
+router.post("/auth/logout", (req, res): void => {
+  delete req.session.userId;
+  delete req.session.role;
+  res.json({ message: "로그아웃되었습니다." });
 });
 
 router.get("/auth/me", requireAuth, async (req, res): Promise<void> => {
