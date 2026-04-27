@@ -94,6 +94,8 @@ export function Register() {
     }
 
     setIsPending(true);
+    const controller = new AbortController();
+    const abortTimer = setTimeout(() => controller.abort(), 25000);
     try {
       const body: Record<string, unknown> = {
         ...values,
@@ -109,28 +111,48 @@ export function Register() {
         headers: { "Content-Type": "application/json" },
         credentials: "include",
         body: JSON.stringify(body),
+        signal: controller.signal,
       });
 
-      const data = await res.json();
+      let data: any = null;
+      try {
+        data = await res.json();
+      } catch {
+        toast({
+          variant: "destructive",
+          title: "서버 오류",
+          description: "서버에서 예상치 못한 오류가 발생했습니다. 잠시 후 다시 시도해주세요.",
+        });
+        return;
+      }
 
       if (!res.ok) {
         toast({
           variant: "destructive",
           title: "회원가입 실패",
-          description: data.message || "입력한 정보를 확인해주세요.",
+          description: data?.message || "입력한 정보를 확인해주세요.",
         });
         return;
       }
 
       queryClient.setQueryData(getGetMeQueryKey(), data.user);
       setLocation("/feed");
-    } catch {
-      toast({
-        variant: "destructive",
-        title: "오류",
-        description: "서버와 통신 중 오류가 발생했습니다.",
-      });
+    } catch (err: any) {
+      if (err?.name === "AbortError") {
+        toast({
+          variant: "destructive",
+          title: "요청 시간 초과",
+          description: "AI 인증 서버 응답이 지연되고 있습니다. 잠시 후 다시 시도해주세요.",
+        });
+      } else {
+        toast({
+          variant: "destructive",
+          title: "오류",
+          description: "서버와 통신 중 오류가 발생했습니다.",
+        });
+      }
     } finally {
+      clearTimeout(abortTimer);
       setIsPending(false);
     }
   }

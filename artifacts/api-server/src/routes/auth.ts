@@ -33,12 +33,14 @@ const GEMINI_MODEL = "gemini-2.5-flash";
 
 const ai = new GoogleGenAI(aiOptions);
 
+const GEMINI_TIMEOUT_MS = 8000;
+
 async function verifyMechanicalEngineeringImage(base64Image: string, _studentId: string): Promise<{ verified: boolean; reason: string }> {
   try {
     const base64Data = base64Image.includes(",") ? base64Image.split(",")[1] : base64Image;
     const mimeType = base64Image.startsWith("data:image/png") ? "image/png" : "image/jpeg";
 
-    const response = await ai.models.generateContent({
+    const geminiCall = ai.models.generateContent({
       model: GEMINI_MODEL,
       contents: [
         {
@@ -66,20 +68,29 @@ verified는 이미지에 "기계시스템공학과" 또는 "기계시스템공�
         },
       ],
       config: {
-        maxOutputTokens: 512,
+        maxOutputTokens: 256,
         thinkingConfig: { thinkingBudget: 0 },
       },
     });
 
+    const timeout = new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error("GEMINI_TIMEOUT")), GEMINI_TIMEOUT_MS)
+    );
+
+    const response = await Promise.race([geminiCall, timeout]);
     const content = response.text?.trim() ?? "";
     const jsonMatch = content.match(/\{[\s\S]*\}/);
     if (jsonMatch) {
       return JSON.parse(jsonMatch[0]);
     }
     return { verified: false, reason: "응답 형식 오류" };
-  } catch (err) {
+  } catch (err: any) {
+    if (err?.message === "GEMINI_TIMEOUT") {
+      console.error("AI verification timeout after", GEMINI_TIMEOUT_MS, "ms");
+      return { verified: false, reason: "인증 서비스 응답 시간 초과. 잠시 후 다시 시도해주세요." };
+    }
     console.error("AI verification error:", err);
-    return { verified: false, reason: "인증 서비스 오류" };
+    return { verified: false, reason: "인증 서비스 오류. 잠시 후 다시 시도해주세요." };
   }
 }
 
