@@ -20,6 +20,18 @@ async function buildApp() {
     },
     external: [
       "*.node",
+      // Firebase / Google Cloud — kept external because @grpc/grpc-js loads
+      // .proto files at runtime using absolute paths that only exist in the
+      // original node_modules tree; bundling them breaks those paths in Lambda.
+      "firebase-admin",
+      "firebase-admin/*",
+      "@google-cloud/*",
+      "googleapis",
+      "@grpc/*",
+      "google-auth-library",
+      "google-gax",
+      // Native / optional add-ons that cannot be bundled
+      "*.node",
       "sharp",
       "better-sqlite3",
       "sqlite3",
