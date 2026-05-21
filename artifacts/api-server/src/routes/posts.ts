@@ -58,7 +58,9 @@ router.get("/posts", requireAuth, async (req, res): Promise<void> => {
 
   const posts = rows.map((d) => {
     const p = d.data() as FSPost;
-    return formatPost(d.id, p, authorMap.get(p.authorId) ?? "student", p.likeCount ?? 0, p.commentCount ?? 0, likedSet.has(d.id), p.authorId === userId);
+    const isAnonymous = p.isAnonymous !== false;
+    const authorRole = isAnonymous ? "student" : (authorMap.get(p.authorId) ?? "student");
+    return formatPost(d.id, p, authorRole, p.likeCount ?? 0, p.commentCount ?? 0, likedSet.has(d.id), p.authorId === userId);
   });
 
   res.json({ posts, total, page, limit });
@@ -76,10 +78,12 @@ router.post("/posts", requireAuth, async (req, res): Promise<void> => {
 
   const docRef = postsCol().doc();
   const now = new Date();
+  const isAnonymous = role === "student" ? true : (parsed.data.isAnonymous !== false);
   const postData = {
     title: parsed.data.title,
     content: parsed.data.content,
     authorId: userId,
+    isAnonymous,
     type: "post" as const,
     likeCount: 0,
     commentCount: 0,
@@ -87,7 +91,8 @@ router.post("/posts", requireAuth, async (req, res): Promise<void> => {
   };
   await docRef.set(postData);
 
-  res.status(201).json(formatPost(docRef.id, { ...postData, createdAt: undefined as any, id: docRef.id }, role, 0, 0, false, true));
+  const authorRole = isAnonymous ? "student" : role;
+  res.status(201).json(formatPost(docRef.id, { ...postData, createdAt: undefined as any, id: docRef.id }, authorRole, 0, 0, false, true));
 });
 
 router.get("/posts/:postId", requireAuth, async (req, res): Promise<void> => {
@@ -107,7 +112,8 @@ router.get("/posts/:postId", requireAuth, async (req, res): Promise<void> => {
   }
 
   const authorDoc = await usersCol().doc(post.authorId).get();
-  const authorRole = authorDoc.exists ? (authorDoc.data() as FSUser).role : "student";
+  const isAnonymous = post.isAnonymous !== false;
+  const authorRole = isAnonymous ? "student" : (authorDoc.exists ? (authorDoc.data() as FSUser).role : "student");
 
   const likeSnap = await likesCol().where("postId", "==", postId).where("userId", "==", userId).limit(1).get();
 

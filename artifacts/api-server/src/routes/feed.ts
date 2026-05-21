@@ -44,11 +44,13 @@ router.get("/feed", requireAuth, async (req, res): Promise<void> => {
 
   const items = rows.map((d) => {
     const p = d.data() as FSPost;
+    const isAnonymous = p.type === "announcement" ? false : (p.isAnonymous !== false);
+    const authorRole = isAnonymous ? "student" : (authorMap.get(p.authorId) ?? "student");
     return {
       id: d.id,
       title: p.title,
       content: p.content,
-      authorRole: authorMap.get(p.authorId) ?? "student",
+      authorRole,
       likeCount: p.likeCount ?? 0,
       commentCount: p.commentCount ?? 0,
       isLiked: likedSet.has(d.id),

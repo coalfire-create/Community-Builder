@@ -120,6 +120,7 @@ export interface FeedResponse {
 export interface CreatePostBody {
   title: string;
   content: string;
+  isAnonymous?: boolean;
 }
 
 export interface CreateCommentBody {

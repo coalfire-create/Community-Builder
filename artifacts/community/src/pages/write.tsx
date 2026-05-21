@@ -17,6 +17,7 @@ export function Write() {
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [isAnnouncement, setIsAnnouncement] = useState(false);
+  const [isAnonymous, setIsAnonymous] = useState(true);
 
   const canCreateAnnouncement = user?.role === "council" || user?.role === "admin";
 
@@ -67,7 +68,7 @@ export function Write() {
       }
       createAnnouncement({ data: { title: title.trim(), content: content.trim() } });
     } else {
-      createPost({ data: { title: title.trim(), content: content.trim() } });
+      createPost({ data: { title: title.trim(), content: content.trim(), isAnonymous } });
     }
   };
 
@@ -86,14 +87,14 @@ export function Write() {
           size="sm"
           onClick={handleSubmit}
           disabled={isPending || !title.trim() || !content.trim()}
-          className="h-8 px-4"
+          className="h-8 px-4 font-semibold"
         >
           {isPending ? "등록 중..." : "등록"}
         </Button>
       </div>
 
       {canCreateAnnouncement && (
-        <div className="flex items-center gap-3 px-4 py-3 bg-muted/30 border-b border-border">
+        <div className="flex items-center justify-between px-4 py-3 bg-muted/30 border-b border-border">
           <button
             onClick={() => setIsAnnouncement(!isAnnouncement)}
             className={`flex items-center gap-2 text-sm font-medium transition-colors ${
@@ -108,6 +109,33 @@ export function Write() {
             <Megaphone className="h-4 w-4" />
             공지사항으로 작성
           </button>
+
+          {!isAnnouncement && (
+            <div className="flex items-center gap-1 p-0.5 bg-slate-100 dark:bg-slate-900 border border-border/30 rounded-full">
+              <button
+                type="button"
+                onClick={() => setIsAnonymous(true)}
+                className={`px-3 py-1 rounded-full text-[10.5px] font-bold transition-all cursor-pointer ${
+                  isAnonymous
+                    ? "bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 shadow-sm"
+                    : "text-slate-400 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
+                }`}
+              >
+                익명
+              </button>
+              <button
+                type="button"
+                onClick={() => setIsAnonymous(false)}
+                className={`px-3 py-1 rounded-full text-[10.5px] font-bold transition-all cursor-pointer ${
+                  !isAnonymous
+                    ? "bg-primary text-white shadow-sm"
+                    : "text-slate-400 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
+                }`}
+              >
+                학생회
+              </button>
+            </div>
+          )}
         </div>
       )}
 
@@ -119,7 +147,13 @@ export function Write() {
           className="text-base font-medium h-12 border-0 border-b rounded-none px-0 focus-visible:ring-0 bg-transparent"
         />
         <Textarea
-          placeholder="내용을 입력하세요. 익명으로 게시됩니다."
+          placeholder={
+            isAnnouncement
+              ? "공지사항 내용을 입력하세요."
+              : isAnonymous
+              ? "내용을 입력하세요. 익명으로 게시되며, 타인을 비방하는 글은 제한될 수 있습니다."
+              : "내용을 입력하세요. 학생회 명의로 게시되며, 타인을 비방하는 글은 제한될 수 있습니다."
+          }
           value={content}
           onChange={(e) => setContent(e.target.value)}
           className="flex-1 resize-none border-0 focus-visible:ring-0 px-0 bg-transparent text-sm leading-relaxed"
@@ -129,7 +163,11 @@ export function Write() {
 
       <div className="px-4 pb-4">
         <p className="text-xs text-muted-foreground">
-          {isAnnouncement ? "📢 공지사항으로 게시됩니다." : "모든 글은 익명으로 게시됩니다."}
+          {isAnnouncement
+            ? "📢 학생회 공식 공지사항으로 게시됩니다."
+            : isAnonymous
+            ? "모든 글은 익명으로 게시됩니다."
+            : "학생회 명의로 게시판에 등록됩니다."}
         </p>
       </div>
     </div>

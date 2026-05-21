@@ -64,7 +64,7 @@ function AllowedStudentIdSection() {
         toast({ variant: "destructive", title: "추가 실패", description: data.message });
         return;
       }
-      toast({ title: `${data.inserted.length}개 학번 추가됨` });
+      toast({ title: `${data.inserted.length}개 전화번호 추가됨` });
       setInputText("");
       fetchList();
     } catch {
@@ -98,17 +98,17 @@ function AllowedStudentIdSection() {
     <div className="mt-6">
       <div className="flex items-center gap-2 mb-3">
         <UserCheck className="h-4 w-4 text-primary" />
-        <h2 className="text-sm font-semibold">1학년 사전 등록 학번</h2>
+        <h2 className="text-sm font-semibold">광역학생 사전 등록 전화번호</h2>
         <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full">{list.length}개</span>
       </div>
       <p className="text-xs text-muted-foreground mb-3">
-        등록된 학번은 사진 인증 없이 바로 가입할 수 있습니다. (1학년 대상)<br />
-        여러 학번을 한 번에 추가하려면 줄 바꿈 또는 쉼표로 구분해 입력하세요.
+        등록된 전화번호는 사진 인증 없이 바로 가입할 수 있습니다. (광역학생 대상)<br />
+        여러 전화번호를 한 번에 추가하려면 줄 바꿈 또는 쉼표로 구분해 입력하세요.
       </p>
 
       <div className="space-y-2 mb-4">
         <Textarea
-          placeholder={"학번 입력 (여러 개는 줄바꿈 또는 쉼표로 구분)\n예:\n60261234\n60265678"}
+          placeholder={"전화번호 입력 (여러 개는 줄바꿈 또는 쉼표로 구분)\n예:\n01012345678\n01098765432"}
           value={inputText}
           onChange={(e) => setInputText(e.target.value)}
           className="text-sm font-mono resize-none bg-muted/50 border-0 focus-visible:ring-1 focus-visible:ring-primary"
@@ -121,7 +121,7 @@ function AllowedStudentIdSection() {
           className="w-full h-9 gap-1.5"
         >
           {isAdding ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Plus className="h-3.5 w-3.5" />}
-          학번 추가
+          전화번호 추가
         </Button>
       </div>
 
@@ -131,7 +131,7 @@ function AllowedStudentIdSection() {
         </div>
       ) : list.length === 0 ? (
         <div className="text-center py-8 text-muted-foreground text-sm">
-          등록된 학번이 없습니다
+          등록된 전화번호가 없습니다
         </div>
       ) : (
         <div className="space-y-1.5 max-h-64 overflow-y-auto">

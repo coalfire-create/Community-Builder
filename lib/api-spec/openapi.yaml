@@ -768,6 +768,8 @@ components:
           type: string
         content:
           type: string
+        isAnonymous:
+          type: boolean
       required:
         - title
         - content

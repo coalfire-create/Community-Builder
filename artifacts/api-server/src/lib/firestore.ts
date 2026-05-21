@@ -1,4 +1,39 @@
 // @ts-nocheck
+import fs from "fs";
+import path from "path";
+
+// Proactively load .env variables from workspace root or parents
+try {
+  let currentDir = process.cwd();
+  let envPath = "";
+  // Search up to 4 directory levels up to find the root .env file
+  for (let i = 0; i < 4; i++) {
+    const checkPath = path.resolve(currentDir, ".env");
+    if (fs.existsSync(checkPath)) {
+      envPath = checkPath;
+      break;
+    }
+    currentDir = path.resolve(currentDir, "..");
+  }
+  if (envPath) {
+    const content = fs.readFileSync(envPath, "utf-8");
+    content.split("\n").forEach(line => {
+      const parts = line.trim().split("=");
+      if (parts.length >= 2 && !line.startsWith("#")) {
+        const key = parts[0].trim();
+        let val = parts.slice(1).join("=").trim();
+        // strip surrounding quotes if present
+        val = val.replace(/^['"]|['"]$/g, "");
+        // convert escaped newlines
+        val = val.replace(/\\n/g, "\n");
+        process.env[key] = val;
+      }
+    });
+  }
+} catch (e) {
+  console.error("Failed to load .env manually in firestore:", e);
+}
+
 import { initializeApp, getApps, cert } from "firebase-admin/app";
 import { getFirestore, FieldValue, Timestamp } from "firebase-admin/firestore";
 
@@ -9,9 +44,9 @@ if (!getApps().length) {
 
   initializeApp({
     credential: cert({
-      projectId: process.env.FIREBASE_PROJECT_ID,
-      clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-      privateKey,
+      project_id: process.env.FIREBASE_PROJECT_ID,
+      client_email: process.env.FIREBASE_CLIENT_EMAIL,
+      private_key: privateKey,
     }),
   });
 }
@@ -40,6 +75,7 @@ export interface FSPost {
   type: PostType;
   likeCount: number;
   commentCount: number;
+  isAnonymous?: boolean;
   createdAt: FirebaseFirestore.Timestamp;
 }
 

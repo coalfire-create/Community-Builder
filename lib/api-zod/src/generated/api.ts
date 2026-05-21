@@ -96,6 +96,7 @@ export const ListPostsResponse = zod.object({
 export const CreatePostBody = zod.object({
   title: zod.string(),
   content: zod.string(),
+  isAnonymous: zod.boolean().optional(),
 });
 
 /**
@@ -180,6 +181,7 @@ export const ListAnnouncementsResponse = zod.object({
 export const CreateAnnouncementBody = zod.object({
   title: zod.string(),
   content: zod.string(),
+  isAnonymous: zod.boolean().optional(),
 });
 
 /**

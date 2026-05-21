@@ -21,7 +21,7 @@ import { cn } from "@/lib/utils";
 type Grade = "1" | "2+" | null;
 
 const formSchema = z.object({
-  studentId: z.string().min(5, "올바른 학번을 입력해주세요"),
+  studentId: z.string().min(5, "올바른 학번 또는 전화번호를 입력해주세요"),
   name: z.string().min(2, "이름을 입력해주세요"),
   password: z.string().min(4, "비밀번호는 4자 이상이어야 합니다"),
 });
@@ -123,53 +123,68 @@ export function Register() {
   const canSubmit = grade === "1" || (isUpperGrade && !!imageBase64);
 
   return (
-    <div className="flex min-h-[100dvh] flex-col items-center justify-center bg-background px-4 py-12">
-      <div className="w-full max-w-sm space-y-8">
+    <div className="min-h-screen w-full flex flex-col justify-center items-center bg-gradient-to-tr from-slate-900 via-slate-950 to-slate-900 text-slate-100 px-4 py-12 relative overflow-hidden">
+      
+      {/* Glow Effects */}
+      <div className="absolute top-[10%] left-[5%] w-72 h-72 rounded-full bg-primary/10 blur-[120px] pointer-events-none" />
+      <div className="absolute bottom-[10%] right-[5%] w-72 h-72 rounded-full bg-indigo-500/5 blur-[120px] pointer-events-none" />
+
+      <div className="w-full max-w-sm space-y-8 relative z-10">
         {/* Header */}
-        <div className="text-center space-y-2">
-          <div className="mx-auto w-16 h-16 rounded-2xl overflow-hidden mb-4 shadow-md">
-            <img src="/logo.jpg" alt="로고" className="w-full h-full object-cover" />
+        <div className="text-center space-y-3">
+          <div className="flex justify-center items-center gap-3">
+            <img
+              src="/mju-logo.png"
+              alt="명지대학교"
+              className="h-9 object-contain brightness-0 invert"
+            />
+            <div className="w-px h-5 bg-slate-800" />
+            <div className="mx-auto w-8 h-8 rounded-lg overflow-hidden shadow-md border border-slate-800">
+              <img src="/logo.jpg" alt="로고" className="w-full h-full object-cover" />
+            </div>
           </div>
-          <h1 className="text-2xl font-bold tracking-tight text-foreground">회원가입</h1>
-          <p className="text-sm text-muted-foreground">
-            명지대 기계시스템공학과 학생 전용 커뮤니티
-          </p>
+          <div className="space-y-1">
+            <h1 className="text-2xl font-bold tracking-tight text-white">회원가입</h1>
+            <p className="text-xs text-slate-400">
+              명지대 기계시스템공학과 학생 전용 커뮤니티
+            </p>
+          </div>
         </div>
 
         {/* Grade Selection */}
-        <div className="space-y-3">
-          <p className="text-sm font-medium text-center text-foreground">학년을 선택해주세요</p>
+        <div className="space-y-3 p-5 rounded-2xl border border-slate-800 bg-slate-950/60 backdrop-blur-md shadow-xl">
+          <p className="text-xs font-semibold text-center text-slate-300">가입 구분을 선택해주세요</p>
           <div className="grid grid-cols-2 gap-3">
             <button
               type="button"
               onClick={() => handleGradeSelect("1")}
               className={cn(
-                "flex flex-col items-center gap-2 py-5 rounded-xl border-2 transition-all font-medium text-sm",
+                "flex flex-col items-center gap-2 py-4 rounded-xl border transition-all font-medium text-xs cursor-pointer",
                 grade === "1"
-                  ? "border-primary bg-primary text-white shadow-md"
-                  : "border-border bg-muted/30 text-foreground hover:border-primary/50 hover:bg-primary/5"
+                  ? "border-primary bg-primary/20 text-primary-foreground shadow-md shadow-primary/10"
+                  : "border-slate-800 bg-slate-900/40 text-slate-400 hover:border-slate-700 hover:text-slate-200"
               )}
             >
-              <GraduationCap className={cn("h-6 w-6", grade === "1" ? "text-white" : "text-primary")} />
-              <span>1학년</span>
-              <span className={cn("text-xs font-normal", grade === "1" ? "text-white/80" : "text-muted-foreground")}>
-                학번 + 실명 + 비밀번호
+              <GraduationCap className={cn("h-5 w-5", grade === "1" ? "text-primary" : "text-slate-500")} />
+              <span className="font-bold">공과대학 광역</span>
+              <span className="text-[10px] opacity-80 text-center font-normal px-1">
+                전화번호/실명 가입
               </span>
             </button>
             <button
               type="button"
               onClick={() => handleGradeSelect("2+")}
               className={cn(
-                "flex flex-col items-center gap-2 py-5 rounded-xl border-2 transition-all font-medium text-sm",
+                "flex flex-col items-center gap-2 py-4 rounded-xl border transition-all font-medium text-xs cursor-pointer",
                 grade === "2+"
-                  ? "border-primary bg-primary text-white shadow-md"
-                  : "border-border bg-muted/30 text-foreground hover:border-primary/50 hover:bg-primary/5"
+                  ? "border-primary bg-primary/20 text-primary-foreground shadow-md shadow-primary/10"
+                  : "border-slate-800 bg-slate-900/40 text-slate-400 hover:border-slate-700 hover:text-slate-200"
               )}
             >
-              <ShieldCheck className={cn("h-6 w-6", grade === "2+" ? "text-white" : "text-primary")} />
-              <span>2학년 이상</span>
-              <span className={cn("text-xs font-normal", grade === "2+" ? "text-white/80" : "text-muted-foreground")}>
-                + 학생카드 인증 필요
+              <ShieldCheck className={cn("h-5 w-5", grade === "2+" ? "text-primary" : "text-slate-500")} />
+              <span className="font-bold">기계과 (광역 제외)</span>
+              <span className="text-[10px] opacity-80 text-center font-normal px-1">
+                학생카드 인증 필요
               </span>
             </button>
           </div>
@@ -177,135 +192,137 @@ export function Register() {
 
         {/* Form — shown after grade selected */}
         {grade && (
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-              <FormField
-                control={form.control}
-                name="studentId"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormControl>
-                      <Input
-                        placeholder="학번"
-                        {...field}
-                        className="h-12 bg-muted/50 border-0 focus-visible:ring-1 focus-visible:ring-primary"
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+          <div className="p-6 rounded-2xl border border-slate-800 bg-slate-950/60 backdrop-blur-md shadow-xl">
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                <FormField
+                  control={form.control}
+                  name="studentId"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormControl>
+                        <Input
+                          placeholder={grade === "1" ? "전화번호 (예: 010-XXXX-XXXX)" : "학번"}
+                          {...field}
+                          className="h-12 bg-slate-900/60 border-slate-800 focus-visible:ring-1 focus-visible:ring-primary focus-visible:border-primary text-slate-100 placeholder:text-slate-500 rounded-xl"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-              <FormField
-                control={form.control}
-                name="name"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormControl>
-                      <Input
-                        placeholder="실명"
-                        {...field}
-                        className="h-12 bg-muted/50 border-0 focus-visible:ring-1 focus-visible:ring-primary"
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+                <FormField
+                  control={form.control}
+                  name="name"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormControl>
+                        <Input
+                          placeholder="실명"
+                          {...field}
+                          className="h-12 bg-slate-900/60 border-slate-800 focus-visible:ring-1 focus-visible:ring-primary focus-visible:border-primary text-slate-100 placeholder:text-slate-500 rounded-xl"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-              <FormField
-                control={form.control}
-                name="password"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormControl>
-                      <Input
-                        type="password"
-                        placeholder="비밀번호"
-                        autoComplete="new-password"
-                        {...field}
-                        className="h-12 bg-muted/50 border-0 focus-visible:ring-1 focus-visible:ring-primary"
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+                <FormField
+                  control={form.control}
+                  name="password"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormControl>
+                        <Input
+                          type="password"
+                          placeholder="비밀번호"
+                          autoComplete="new-password"
+                          {...field}
+                          className="h-12 bg-slate-900/60 border-slate-800 focus-visible:ring-1 focus-visible:ring-primary focus-visible:border-primary text-slate-100 placeholder:text-slate-500 rounded-xl"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-              {/* 2학년+ 이미지 인증 섹션 */}
-              {isUpperGrade && (
-                <div className="rounded-xl border border-dashed border-primary/40 bg-primary/5 p-4 space-y-3">
-                  <div className="flex items-start gap-2">
-                    <ShieldCheck className="h-4 w-4 text-primary mt-0.5 shrink-0" />
-                    <div className="text-xs text-foreground/70 leading-relaxed">
-                      <span className="font-semibold text-primary">AI 재학 인증 필수</span>
-                      <br />
-                      명지대학교 학생정보시스템(msi.mju.ac.kr) →{" "}
-                      학적/장학 → 학생카드 화면에서{" "}
-                      <span className="font-medium text-foreground">
-                        학번과 학부(기계공학부)가 모두 보이는 스크린샷
-                      </span>
-                      을 업로드하세요.
+                {/* 기계과(광역 제외) 이미지 인증 섹션 */}
+                {isUpperGrade && (
+                  <div className="rounded-xl border border-dashed border-primary/40 bg-slate-900/60 p-4 space-y-3">
+                    <div className="flex items-start gap-2">
+                      <ShieldCheck className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+                      <div className="text-[11px] text-slate-400 leading-relaxed">
+                        <span className="font-semibold text-primary">AI 재학 인증 필수</span>
+                        <br />
+                        명지대학교 학생정보시스템(msi.mju.ac.kr) →{" "}
+                        학적/장학 → 학생카드 화면에서{" "}
+                        <span className="font-medium text-slate-200">
+                          학번과 학부(기계공학부 또는 기계시스템공학과)가 모두 보이는 스크린샷
+                        </span>
+                        을 업로드하세요.
+                      </div>
                     </div>
-                  </div>
 
-                  {imagePreview ? (
-                    <div className="relative">
-                      <img
-                        src={imagePreview}
-                        alt="인증 사진"
-                        className="w-full rounded-lg object-contain max-h-44 border border-border"
-                      />
+                    {imagePreview ? (
+                      <div className="relative rounded-lg overflow-hidden border border-slate-800 bg-slate-950">
+                        <img
+                          src={imagePreview}
+                          alt="인증 사진"
+                          className="w-full object-contain max-h-44"
+                        />
+                        <button
+                          type="button"
+                          onClick={clearImage}
+                          className="absolute top-1.5 right-1.5 bg-slate-900/90 border border-slate-800 rounded-full p-1 hover:bg-slate-800 shadow"
+                        >
+                          <X className="h-3.5 w-3.5 text-slate-300" />
+                        </button>
+                      </div>
+                    ) : (
                       <button
                         type="button"
-                        onClick={clearImage}
-                        className="absolute top-1.5 right-1.5 bg-background/90 rounded-full p-0.5 hover:bg-background shadow"
+                        onClick={() => fileInputRef.current?.click()}
+                        className="w-full flex flex-col items-center gap-2 py-5 rounded-xl border border-slate-800 bg-slate-950/40 hover:bg-slate-900/40 transition-colors cursor-pointer"
                       >
-                        <X className="h-4 w-4 text-foreground" />
+                        <Upload className="h-5 w-5 text-slate-500" />
+                        <span className="text-xs text-slate-400">학생카드 사진 선택</span>
                       </button>
-                    </div>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={() => fileInputRef.current?.click()}
-                      className="w-full flex flex-col items-center gap-2 py-5 rounded-lg border border-border bg-background hover:bg-muted/30 transition-colors cursor-pointer"
-                    >
-                      <Upload className="h-5 w-5 text-muted-foreground" />
-                      <span className="text-xs text-muted-foreground">학생카드 사진 선택</span>
-                    </button>
-                  )}
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={handleImageChange}
-                  />
-                </div>
-              )}
-
-              <Button
-                type="submit"
-                className="w-full h-12 text-base font-medium rounded-xl"
-                disabled={isPending || !canSubmit}
-              >
-                {isPending ? (
-                  <span className="flex items-center gap-2">
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    {isUpperGrade ? "AI 인증 중... (10~20초 소요)" : "처리 중..."}
-                  </span>
-                ) : (
-                  "가입하기"
+                    )}
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={handleImageChange}
+                    />
+                  </div>
                 )}
-              </Button>
-            </form>
-          </Form>
+
+                <Button
+                  type="submit"
+                  className="w-full h-12 text-base font-semibold rounded-xl bg-primary hover:bg-primary/95 text-white transition-all shadow-lg shadow-primary/20"
+                  disabled={isPending || !canSubmit}
+                >
+                  {isPending ? (
+                    <span className="flex items-center gap-2 justify-center">
+                      <Loader2 className="h-4 w-4 animate-spin text-white" />
+                      {isUpperGrade ? "AI 인증 중... (10~20초 소요)" : "처리 중..."}
+                    </span>
+                  ) : (
+                    "가입하기"
+                  )}
+                </Button>
+              </form>
+            </Form>
+          </div>
         )}
 
         <div className="text-center">
           <Link
             href="/"
-            className="text-sm text-muted-foreground hover:text-primary underline underline-offset-4"
+            className="text-sm text-primary hover:text-primary/90 transition-colors underline underline-offset-4 font-medium"
           >
             이미 계정이 있으신가요? 로그인
           </Link>

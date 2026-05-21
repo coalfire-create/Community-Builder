@@ -9,4 +9,5 @@
 export interface CreatePostBody {
   title: string;
   content: string;
+  isAnonymous?: boolean;
 }

@@ -28,7 +28,7 @@ if (!basePath) {
 }
 
 export default defineConfig({
-  build: { sourcemap: false },
+
   base: basePath,
   plugins: [
     mockupPreviewPlugin(),
@@ -53,6 +53,7 @@ export default defineConfig({
   },
   root: path.resolve(import.meta.dirname),
   build: {
+    sourcemap: false,
     outDir: path.resolve(import.meta.dirname, "dist"),
     emptyOutDir: true,
   },
